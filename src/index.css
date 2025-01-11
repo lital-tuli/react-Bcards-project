@@ -1,0 +1,37 @@
+
+@import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
+@import "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css";
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Dark mode styles */
+.dark-mode {
+  background-color: #212529;
+  color: #f8f9fa;
+}
+
+.dark-mode .navbar-light {
+  background-color: #343a40 !important;
+}
+
+.dark-mode .navbar-light .nav-link {
+  color: #f8f9fa !important;
+}
+
+.dark-mode .bg-light {
+  background-color: #343a40 !important;
+}
