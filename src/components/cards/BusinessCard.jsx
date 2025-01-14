@@ -6,7 +6,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
   const userEmail = localStorage.getItem('userEmail');
   const isOwner = card.email === userEmail;
   const canEditDelete = userType === 'business' && isOwner;
-
+//comment
   // Format address object into a string
   const formatAddress = (address) => {
     if (!address) return '';
