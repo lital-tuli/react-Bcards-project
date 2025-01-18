@@ -2,15 +2,18 @@ import React from 'react';
 import { useFormik } from "formik";
 import { Link, useNavigate } from "react-router-dom";
 import * as yup from "yup";
-import { loginUser } from '../../services/UserService';
-
+import { useTheme } from '../../providers/ThemeProvider';
+import { useAuth } from '../../hooks/useAuth';
 const Login = ({ show, onClose }) => {
+  const { theme, isDark } = useTheme();
   const navigate = useNavigate();
+  const { handleLogin, isLoading, error } = useAuth();
 
   const formik = useFormik({
     initialValues: { 
       email: "", 
-      password: "" 
+      password: "",
+      rememberMe: false
     },
     validationSchema: yup.object({
       email: yup.string()
@@ -22,36 +25,29 @@ const Login = ({ show, onClose }) => {
     }),
     onSubmit: async (values) => {
       try {
-        const res = await loginUser(values);
-        if (res.data.length) {
-          localStorage.setItem("userId", JSON.stringify(res.data[0].id));
-          if (onClose) onClose(); // Only close if onClose exists
-          navigate("/home");
-        } else {
-          alert("User not found");
-        }
+        await handleLogin(values);
+        if (onClose) onClose();
       } catch (err) {
-        console.error("Login error:", err);
-        alert("Login failed. Please try again.");
+        console.error("Form submission error:", err);
+        // Error is already handled by useAuth
       }
     },
   });
 
-  // Don't render anything if show is false
-  if (!show) return null;
 
-  return (
+return (
     <>
-      <div className="modal show"
+      {show && (
+        <div className="modal show"
            style={{ display: 'block' }}
            tabIndex="-1">
         <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Login to Your Account</h5>
+          <div className={`modal-content ${theme.bgColor}`}>
+            <div className={`modal-header border-${theme.borderColor}`}>
+              <h5 className={`modal-title ${theme.textColor}`}>Login to Your Account</h5>
               <button 
                 type="button" 
-                className="btn-close" 
+                className={`btn-close ${isDark ? 'btn-close-white' : ''}`}
                 onClick={onClose}
                 aria-label="Close">
               </button>
@@ -59,16 +55,22 @@ const Login = ({ show, onClose }) => {
 
             <div className="modal-body">
               <form onSubmit={formik.handleSubmit} noValidate>
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
+                  </div>
+                )}
+
                 <div className="form-floating mb-3">
                   <input
                     type="email"
-                    className={`form-control ${formik.touched.email && formik.errors.email ? 'is-invalid' : ''}`}
+                    className={`form-control ${theme.inputBg} ${formik.touched.email && formik.errors.email ? 'is-invalid' : ''}`}
                     id="email"
                     name="email"
                     placeholder="name@example.com"
                     {...formik.getFieldProps('email')}
                   />
-                  <label htmlFor="email">Email address</label>
+                  <label className={theme.textColor} htmlFor="email">Email address</label>
                   {formik.touched.email && formik.errors.email && (
                     <div className="invalid-feedback">{formik.errors.email}</div>
                   )}
@@ -77,31 +79,49 @@ const Login = ({ show, onClose }) => {
                 <div className="form-floating mb-3">
                   <input
                     type="password"
-                    className={`form-control ${formik.touched.password && formik.errors.password ? 'is-invalid' : ''}`}
+                    className={`form-control ${theme.inputBg} ${formik.touched.password && formik.errors.password ? 'is-invalid' : ''}`}
                     id="password"
                     name="password"
                     placeholder="Password"
                     {...formik.getFieldProps('password')}
                   />
-                  <label htmlFor="password">Password</label>
+                  <label className={theme.textColor} htmlFor="password">Password</label>
                   {formik.touched.password && formik.errors.password && (
                     <div className="invalid-feedback">{formik.errors.password}</div>
                   )}
                 </div>
 
+                <div className="form-check mb-3">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id="rememberMe"
+                    {...formik.getFieldProps('rememberMe')}
+                  />
+                  <label className={`form-check-label ${theme.textColor}`} htmlFor="rememberMe">
+                    Remember me
+                  </label>
+                </div>
+
                 <button
-                  className="w-100 btn btn-primary mb-3"
+                  className={`w-100 btn ${theme.btnPrimary} mb-3`}
                   type="submit"
-                  onClick={loginUser}
-                  disabled={!formik.isValid || !formik.dirty}
+                  disabled={!formik.isValid || formik.isSubmitting || isLoading}
                 >
+                  {isLoading ? (
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  ) : null}
                   Sign In
                 </button>
 
                 <div className="text-center">
-                  <p className="mb-0">
+                  <p className={`mb-0 ${theme.textColor}`}>
                     Don't have an account?{' '}
-                    <Link to="/register" onClick={onClose}>
+                    <Link 
+                      to="/register" 
+                      onClick={onClose}
+                      className={theme.linkColor}
+                    >
                       Create one now
                     </Link>
                   </p>
@@ -111,7 +131,8 @@ const Login = ({ show, onClose }) => {
           </div>
         </div>
       </div>
-      <div className="modal-backdrop show"></div>
+      )}
+      {show && <div className="modal-backdrop show"></div>}
     </>
   );
 };

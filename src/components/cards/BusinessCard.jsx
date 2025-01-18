@@ -1,11 +1,25 @@
 import React from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { toggleFavorite } from '../../services/CardService';
+import { useTheme } from '../../providers/ThemeProvider';
 
-const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
-  const isLoggedIn = localStorage.getItem('token');
-  const userType = localStorage.getItem('userType');
-  const userEmail = localStorage.getItem('userEmail');
-  const isOwner = card.email === userEmail;
-  const canEditDelete = userType === 'business' && isOwner;
+const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
+  const { isLoggedIn } = useAuth();
+  const { theme } = useTheme();
+  
+  // Handler for favorite toggle
+  const handleFavoriteClick = async () => {
+    if (!isLoggedIn) return;
+    
+    try {
+      await toggleFavorite(card._id);
+      if (onFavoriteChange) {
+        onFavoriteChange(card._id);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
 
   // Format address object into a string
   const formatAddress = (address) => {
@@ -22,6 +36,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
     return `${street} ${houseNumber}, ${city}, ${state} ${zip}, ${country}`.trim().replace(/\s+/g, ' ');
   };
 
+  // Handlers for actions
   const handlePhoneClick = () => {
     if (card.phone) {
       window.location.href = `tel:${card.phone}`;
@@ -48,31 +63,26 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
     }
   };
 
-  const handleFavoriteClick = () => {
-    if (isLoggedIn && onFavorite) {
-      onFavorite(card._id);
-    }
-  };
-
   // Default image if card image is missing or invalid
   const defaultImage = "https://placehold.co/400x200?text=Business+Card";
 
   return (
     <div className="col-md-4 mb-4">
-      <div className="card h-100 shadow">
+      <div className={`card h-100 shadow ${theme.cardBg}`}>
         <div className="position-relative">
           <img 
-            src={card.imageUrl || defaultImage}
+            src={card.image?.url || defaultImage}
             className="card-img-top"
-            alt={card.imageAlt || card.title}
+            alt={card.image?.alt || card.title}
             style={{ height: '200px', objectFit: 'cover' }}
             onError={(e) => {
               e.target.src = defaultImage;
+              e.target.onerror = null;
             }}
           />
           {isLoggedIn && (
             <button 
-              className={`position-absolute end-0 top-0 m-2 btn btn-light rounded-circle p-2 shadow-sm border-0`}
+              className={`position-absolute end-0 top-0 m-2 btn ${theme.bgColor} rounded-circle p-2 shadow-sm border-0`}
               onClick={handleFavoriteClick}
               title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
             >
@@ -84,22 +94,22 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
         <div className="card-body">
           <div className="d-flex align-items-center mb-3">
             <i className="bi bi-building text-primary me-2"></i>
-            <h5 className="card-title mb-0">{card.title}</h5>
+            <h5 className={`card-title mb-0 ${theme.textColor}`}>{card.title}</h5>
           </div>
 
           {card.subtitle && (
             <div className="d-flex align-items-center mb-3">
               <i className="bi bi-file-text me-2"></i>
-              <p className="card-subtitle text-muted mb-0">{card.subtitle}</p>
+              <p className={`card-subtitle mb-0 ${theme.textMuted}`}>{card.subtitle}</p>
             </div>
           )}
 
           <div className="mt-3">
             {card.phone && (
               <div 
-                className="d-flex align-items-center mb-2 text-body cursor-pointer hover-primary"
-                style={{ cursor: 'pointer' }}
+                className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
                 onClick={handlePhoneClick}
+                style={{ cursor: 'pointer' }}
               >
                 <i className="bi bi-telephone-fill text-success me-2"></i>
                 <span>{card.phone}</span>
@@ -108,9 +118,9 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
 
             {card.email && (
               <div 
-                className="d-flex align-items-center mb-2 text-body cursor-pointer hover-primary"
-                style={{ cursor: 'pointer' }}
+                className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
                 onClick={handleEmailClick}
+                style={{ cursor: 'pointer' }}
               >
                 <i className="bi bi-envelope-fill text-primary me-2"></i>
                 <span>{card.email}</span>
@@ -118,7 +128,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
             )}
 
             {card.address && (
-              <div className="d-flex align-items-center mb-2">
+              <div className={`d-flex align-items-center mb-2 ${theme.textColor}`}>
                 <i className="bi bi-geo-alt-fill text-danger me-2"></i>
                 <span>{formatAddress(card.address)}</span>
               </div>
@@ -131,7 +141,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
                   href={card.web} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-decoration-none"
+                  className={`text-decoration-none ${theme.linkColor}`}
                 >
                   {card.web.replace(/^https?:\/\//, '')}
                 </a>
@@ -140,20 +150,20 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavorite }) => {
           </div>
         </div>
 
-        <div className="card-footer bg-transparent">
+        <div className={`card-footer bg-transparent ${theme.borderColor}`}>
           <div className="d-flex justify-content-between align-items-center">
             <button 
-              className="btn btn-outline-primary btn-sm"
+              className={`btn ${theme.btnOutline} btn-sm`}
               onClick={handleShare}
             >
               <i className="bi bi-share me-1"></i>
               Share
             </button>
 
-            {canEditDelete && (
+            {card.isOwner && (
               <div>
                 <button 
-                  className="btn btn-outline-secondary btn-sm me-2"
+                  className={`btn ${theme.btnOutline} btn-sm me-2`}
                   onClick={() => onEdit?.(card._id)}
                 >
                   <i className="bi bi-pencil me-1"></i>

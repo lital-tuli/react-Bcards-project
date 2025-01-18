@@ -3,10 +3,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/layout/Header'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
-import Login from "./components/pages/Login";
+import Login from "./components/modals/Login";
 import Home from './components/pages/Home'
 import Register from './components/pages/Register'
 import About from './components/pages/About'
+import ThemeProvider from './providers/ThemeProvider'
+import MyProfile from './components/users/MyProfile'
+import MyCards from './components/cards/MyCards'
+import FavoriteCards from './components/cards/FavoriteCards'
 
 
 
@@ -14,16 +18,15 @@ import About from './components/pages/About'
 import 'bootstrap/dist/css/bootstrap.min.css'
 // Import Bootstrap JS
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-// import { AuthProvider } from './components/context/AuthContext'
+
 
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
   return (
-   
-    <div className={darkMode ? 'dark-mode' : ''}>
-        <Router>
+   <ThemeProvider>
+ <Router>
           <Header darkMode={darkMode} setDarkMode={setDarkMode} />
           <Navbar />
           <main style={{ minHeight: '80vh' }}>
@@ -33,14 +36,20 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/profile" element={<MyProfile />} />
+                <Route path="/my-cards" element={<MyCards />} />
+                <Route path="/favorites" element={<FavoriteCards />} />
+
               
               </Routes>
             </div>
           </main>
           <Footer />
         </Router>
+   </ThemeProvider>
+       
 
-    </div>
+    
   );
 }
 

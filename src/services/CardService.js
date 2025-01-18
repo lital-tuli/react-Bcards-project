@@ -78,3 +78,22 @@ export const toggleLikeCard = async (cardId) => {
     throw new Error(error.response?.data?.message || 'Failed to update like status');
   }
 };
+
+export const toggleFavorite = async (cardId) => {
+  try {
+    const response = await axiosInstance.patch(`/cards/${cardId}/favorite`);
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    throw new Error(error.response?.data?.message || 'Failed to update favorite status');
+  }
+};
+
+export const getFavoriteCards = async () => {
+  try {
+    const response = await axiosInstance.get('/cards/favorites');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch favorite cards');
+  }
+};
