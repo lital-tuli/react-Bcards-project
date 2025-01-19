@@ -1,11 +1,14 @@
 import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/UserService";
+import { jwtDecode } from "jwt-decode";
+
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!(localStorage.getItem("token") || sessionStorage.getItem("token"));
+  const [user, setUser] = useState(() => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    return token ? jwtDecode(token) : null;
   });
   const navigate = useNavigate();
 
@@ -20,9 +23,9 @@ export const useAuth = () => {
       );
 
       if (token) {
-        setIsLoggedIn(true);
-        navigate("/");
-        return token;
+        const decodedUser = jwtDecode(token);
+        setUser(decodedUser);
+        return decodedUser;
       }
     } catch (err) {
       setError(err.message || "Login failed");
@@ -35,14 +38,24 @@ export const useAuth = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    setIsLoggedIn(false);
+    setUser(null);
     navigate("/");
   }, [navigate]);
+
+  // Effect to handle token changes
+  useEffect(() => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (token && !user) {
+      setUser(jwtDecode(token));
+    }
+  }, [user]);
 
   return {
     isLoading,
     error,
-    isLoggedIn,
+    user,
+    setUser,
+    isLoggedIn: !!user,
     handleLogin,
     handleLogout
   };

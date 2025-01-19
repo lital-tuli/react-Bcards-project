@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { jwtDecode } from "jwt-decode";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
-import { Modal, Button, Alert } from 'react-bootstrap';
-
-import { deleteUser , logoutUser, updateUserToken, updateUserType } from '../../services/UserService';
+import { useTheme } from '../../providers/ThemeProvider';
+import TypeChange from '../modals/TypeChange';
+import Logout from '../modals/Logout';
+import DeleteAccount from '../modals/DeleteAccount';
+import { deleteUser, logoutUser, updateUserToken, updateUserType } from '../../services/UserService';
 
 const UserCard = ({ userData }) => {
+  const { theme } = useTheme();
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -20,6 +23,8 @@ const UserCard = ({ userData }) => {
       await updateUserType(userId);
       await updateUserToken(userData.email, password);
       setShowTypeModal(false);
+      setPassword("");
+      setErrorMessage("");
       window.location.reload();
     } catch (error) {
       setErrorMessage(
@@ -31,122 +36,119 @@ const UserCard = ({ userData }) => {
     }
   };
 
-  const handleLogout = async () => {
-    await logoutUser();
+  const handleCloseTypeModal = () => {
+    setShowTypeModal(false);
+    setPassword("");
+    setErrorMessage("");
   };
 
-  const handleDeleteAccount = async () => {
-    if (window.confirm("Are you sure you want to delete your account?")) {
-      await deleteUser(userId);
-      logoutUser();
+  const handleCloseLogout = () => {
+    setShowLogoutModal(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
+  const handleCloseDelete = () => {
+    setShowDeleteModal(false);
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteUser(userId);
+      await logoutUser();
+    } catch (error) {
+      console.error("Delete account error:", error);
+    }
+  };
+
+  const defaultImage = "https://placehold.co/100x100?text=Profile";
+
   return (
     <>
-      {/* Type Change Modal */}
-      <Modal show={showTypeModal} onHide={() => setShowTypeModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Change to {userData.isBusiness ? "Customer" : "Business"} Account
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Changing the user type will change your permissions. Are you sure?</p>
-          <div className="input-group mb-3">
-            <span className="input-group-text">Confirm Password:</span>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          {errorMessage && (
-            <Alert variant="danger">
-              {errorMessage}
-            </Alert>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowTypeModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleConfirmTypeChange}>
-            Confirm Change
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <TypeChange 
+        show={showTypeModal}
+        handleClose={handleCloseTypeModal}
+        handleConfirm={handleConfirmTypeChange}
+        userData={userData}
+        password={password}
+        setPassword={setPassword}
+        errorMessage={errorMessage}
+      />
 
-      {/* Logout Modal */}
-      <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Log Out?</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to log out from your account?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowLogoutModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleLogout}>
-            Log Out
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Logout 
+        show={showLogoutModal}
+        handleClose={handleCloseLogout}
+        handleLogout={handleLogout}
+      />
 
-      {/* User Information */}
+      <DeleteAccount 
+        show={showDeleteModal}
+        handleClose={handleCloseDelete}
+        handleDelete={handleDelete}
+      />
+
       <div className="container">
         <div className="row">
           {/* Left Column */}
           <div className="col-12 col-md-6">
-            <div className="card mb-3">
+            <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
-                <h5 className="card-title">Personal Information</h5>
+                <h5 className={`card-title ${theme.textColor}`}>Personal Information</h5>
                 <div className="mb-3">
-                  <strong>Full Name:</strong>
-                  <p className="text-capitalize mb-2">
-                    {`${userData.name.first} ${userData.name.last}`}
+                  <strong className={theme.textColor}>Full Name:</strong>
+                  <p className={`text-capitalize mb-2 ${theme.textColor}`}>
+                    {`${userData.name.first} ${userData.name.middle ? userData.name.middle + ' ' : ''}${userData.name.last}`}
                   </p>
                 </div>
                 <div className="mb-3">
-                  <strong>Email:</strong>
-                  <p className="mb-2">{userData.email}</p>
+                  <strong className={theme.textColor}>Email:</strong>
+                  <p className={`mb-2 ${theme.textColor}`}>{userData.email}</p>
                 </div>
                 <div className="mb-3">
-                  <strong>Phone:</strong>
-                  <p className="mb-2">{userData.phone}</p>
+                  <strong className={theme.textColor}>Phone:</strong>
+                  <p className={`mb-2 ${theme.textColor}`}>{userData.phone}</p>
                 </div>
               </div>
             </div>
 
-            <div className="card mb-3">
+            <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
-                <h5 className="card-title">Address</h5>
+                <h5 className={`card-title ${theme.textColor}`}>Address</h5>
                 <div className="mb-2">
-                  <strong>Street: </strong>
-                  <span className="text-capitalize">
+                  <strong className={theme.textColor}>Street: </strong>
+                  <span className={`text-capitalize ${theme.textColor}`}>
                     {userData.address.street} {userData.address.houseNumber}
                   </span>
                 </div>
                 <div className="mb-2">
-                  <strong>City: </strong>
-                  <span className="text-capitalize">{userData.address.city}</span>
+                  <strong className={theme.textColor}>City: </strong>
+                  <span className={`text-capitalize ${theme.textColor}`}>
+                    {userData.address.city}
+                  </span>
                 </div>
                 {userData.address.state && (
                   <div className="mb-2">
-                    <strong>State: </strong>
-                    <span className="text-capitalize">{userData.address.state}</span>
+                    <strong className={theme.textColor}>State: </strong>
+                    <span className={`text-capitalize ${theme.textColor}`}>
+                      {userData.address.state}
+                    </span>
                   </div>
                 )}
                 <div className="mb-2">
-                  <strong>Country: </strong>
-                  <span className="text-capitalize">{userData.address.country}</span>
+                  <strong className={theme.textColor}>Country: </strong>
+                  <span className={`text-capitalize ${theme.textColor}`}>
+                    {userData.address.country}
+                  </span>
                 </div>
                 <div className="mb-2">
-                  <strong>Zipcode: </strong>
-                  <span>{userData.address.zip}</span>
+                  <strong className={theme.textColor}>Zipcode: </strong>
+                  <span className={theme.textColor}>{userData.address.zip}</span>
                 </div>
               </div>
             </div>
@@ -154,58 +156,60 @@ const UserCard = ({ userData }) => {
 
           {/* Right Column */}
           <div className="col-12 col-md-6">
-            <div className="card mb-3">
+            <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
-                <h5 className="card-title">Profile Image</h5>
+                <h5 className={`card-title ${theme.textColor}`}>Profile Image</h5>
                 <div className="text-center">
                   <img
-                    src={userData.image.url}
-                    alt={userData.image.alt}
+                    src={userData.image?.url || defaultImage}
+                    alt={userData.image?.alt || "Profile"}
                     className="rounded-circle"
                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
+                    onError={(e) => {
+                      e.target.src = defaultImage;
+                      e.target.onerror = null;
+                    }}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="card mb-3">
+            <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
-                <h5 className="card-title">Account Type</h5>
-                <p className="mb-3">
+                <h5 className={`card-title ${theme.textColor}`}>Account Type</h5>
+                <p className={`mb-3 ${theme.textColor}`}>
                   Currently registered as a{" "}
                   <span className="fw-bold">
                     {userData.isBusiness ? "Business" : "Customer"}
                   </span>
                 </p>
-                <Button 
-                  variant="warning"
-                  className="w-100"
+                <button 
+                  className={`btn ${theme.btnOutline} w-100`}
                   onClick={() => setShowTypeModal(true)}
                 >
                   Change to {userData.isBusiness ? "Customer" : "Business"} Account
-                </Button>
+                </button>
               </div>
             </div>
 
-            <div className="card mb-3">
+            <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
-                <h5 className="card-title">Account Actions</h5>
-                <Button 
-                  variant="danger" 
-                  className="w-100 mb-3"
+                <h5 className={`card-title ${theme.textColor}`}>Account Actions</h5>
+                <button 
+                  className="btn btn-danger w-100 mb-3"
                   onClick={() => setShowLogoutModal(true)}
                 >
                   Log Out
-                </Button>
-                <p className="text-muted small">
+                </button>
+                <p className={`small ${theme.textMuted}`}>
                   Member since: {format(new Date(userData.createdAt), "MMMM do yyyy")}
                 </p>
-                <Link
-                  onClick={handleDeleteAccount}
-                  className="text-danger text-decoration-none"
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="btn btn-link text-danger text-decoration-none p-0"
                 >
                   Delete account permanently
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -214,7 +218,5 @@ const UserCard = ({ userData }) => {
     </>
   );
 };
-
-
 
 export default UserCard;

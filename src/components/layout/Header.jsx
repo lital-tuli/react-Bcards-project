@@ -1,64 +1,47 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Login from '../modals/Login';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../providers/ThemeProvider';
+import Login from '../modals/Login';
 
 const Header = () => {
-  // Hooks
-  const { theme, isDark, toggleDarkMode } = useTheme();
-  const { isLoggedIn, handleLogout } = useAuth();
+  const { theme } = useTheme();
+  const { isLoggedIn, user, handleLogout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  // Handlers
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log('Searching for:', searchQuery);
-  };
+ 
 
-  // Components
-  const SearchBar = () => (
-    <form className="d-flex mx-auto" onSubmit={handleSearch}>
-      <div className="input-group">
-        <input
-          type="search"
-          className={`form-control ${theme.bgColor}`}
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button className={`btn ${theme.btnOutline}`} type="submit">
-          <i className="bi bi-search"></i>
-        </button>
-      </div>
-    </form>
-  );
+  
 
-  const AuthButtons = () => (
-    isLoggedIn ? (
-      <div className="d-flex gap-2">
-        <Link to="/profile" className={`btn ${theme.btnOutline}`}>
-          <i className="bi bi-person-circle me-1"></i>
-          My Profile
-        </Link>
-        <Link to="/my-cards" className={`btn ${theme.btnOutline}`}>
-          <i className="bi bi-collection me-1"></i>
-          My Cards
-        </Link>
-        <Link to="/favorites" className={`btn ${theme.btnOutline}`}>
-          <i className="bi bi-heart me-1"></i>
-          Favorites
-        </Link>
-        <button 
-          onClick={handleLogout} 
-          className={`btn ${theme.btnOutline}`}
-        >
-          <i className="bi bi-box-arrow-right me-1"></i>
-          Logout
-        </button>
-      </div>
-    ) : (
+  // Authentication buttons component
+  const AuthButtons = () => {
+    if (isLoggedIn) {
+      return (
+        <div className="d-flex gap-2">
+          <Link to="/profile" className={`btn ${theme.btnOutline}`}>
+            <i className="bi bi-person-circle me-1"></i>
+            My Profile
+          </Link>
+          <Link to="/my-cards" className={`btn ${theme.btnOutline}`}>
+            <i className="bi bi-collection me-1"></i>
+            My Cards
+          </Link>
+          <Link to="/favorites" className={`btn ${theme.btnOutline}`}>
+            <i className="bi bi-heart me-1"></i>
+            Favorites
+          </Link>
+          <button 
+            onClick={handleLogout} 
+            className={`btn ${theme.btnOutline}`}
+          >
+            <i className="bi bi-box-arrow-right me-1"></i>
+            Logout
+          </button>
+        </div>
+      );
+    }
+
+    return (
       <div className="d-flex gap-2">
         <button
           onClick={() => setShowLogin(true)}
@@ -72,42 +55,30 @@ const Header = () => {
           Register
         </Link>
       </div>
-    )
-  );
+    );
+  };
 
   return (
-    <nav className={`navbar navbar-expand-lg ${theme.navbarBg}`}>
-      <div className="container">
-        {/* Brand */}
-        <Link className={`navbar-brand ${theme.textColor}`} to="/">
-          <i className="bi bi-card-text me-2"></i>
-          BCard
-        </Link>
+    <>
+      <nav className={`navbar navbar-expand-lg ${theme.navbarBg}`}>
+        <div className="container">
+          <Link className={`navbar-brand ${theme.textColor}`} to="/">
+            <i className="bi bi-card-text me-2"></i>
+            BCard
+          </Link>
 
-        {/* Search */}
-        <SearchBar />
 
-        {/* Right-side buttons */}
-        <div className="d-flex gap-2 align-items-center">
-          {/* Theme Toggle */}
-          <button 
-            className={`btn ${theme.btnOutline}`}
-            onClick={toggleDarkMode}
-          >
-            <i className={`bi bi-${isDark ? 'sun' : 'moon'}-fill`}></i>
-          </button>
-
-          {/* Auth Buttons */}
-          <AuthButtons />
+          <div className="d-flex gap-2 align-items-center">
+            <AuthButtons />
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Login Modal */}
       <Login 
         show={showLogin} 
         onClose={() => setShowLogin(false)} 
       />
-    </nav>
+    </>
   );
 };
 

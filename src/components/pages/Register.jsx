@@ -1,75 +1,132 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useFormik } from 'formik';
-import * as yup from 'yup';
 import { registerUser } from '../../services/UserService';
+import { useNavigate } from 'react-router-dom';
+import FormField from '../common/FormField';
+import { useAuth } from '../../hooks/useAuth';
+import * as yup from 'yup';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const { handleLogin, setUser } = useAuth();  // Get setUser from useAuth
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Define form fields with proper structure
+  const fields = [
+    { name: "name.first", label: "First Name", type: "text", col: "4" },
+    { name: "name.middle", label: "Middle Name", type: "text", col: "4", required: false },
+    { name: "name.last", label: "Last Name", type: "text", col: "4" },
+    { name: "phone", label: "Phone", type: "tel", col: "6" },
+    { name: "email", label: "Email", type: "email", col: "6" },
+    { name: "password", label: "Password", type: "password", col: "6" },
+    { name: "image.url", label: "Image URL", type: "text", col: "6", required: false },
+    { name: "image.alt", label: "Image Alt", type: "text", col: "6", required: false },
+    { name: "address.state", label: "State", type: "text", col: "6", required: false },
+    { name: "address.country", label: "Country", type: "text", col: "6" },
+    { name: "address.city", label: "City", type: "text", col: "4" },
+    { name: "address.street", label: "Street", type: "text", col: "4" },
+    { name: "address.houseNumber", label: "House Number", type: "number", col: "2" },
+    { name: "address.zip", label: "Zip", type: "number", col: "2" }
+  ];
+
+  // Validation schema following documentation requirements
+  const validationSchema = yup.object({
+    name: yup.object({
+      first: yup.string().min(2).max(256).required("First name is required"),
+      middle: yup.string().min(2).max(256).optional(),
+      last: yup.string().min(2).max(256).required("Last name is required")
+    }),
+    phone: yup.string().min(9).max(11).required("Phone is required"),
+    email: yup.string().min(5).email("Invalid email format").required("Email is required"),
+    password: yup.string().min(7).max(20).required("Password is required"),
+    image: yup.object({
+      url: yup.string().min(14).url("Must be a valid URL"),
+      alt: yup.string().min(2).max(256)
+    }),
+    address: yup.object({
+      state: yup.string().min(2).max(256).optional(),
+      country: yup.string().min(2).max(256).required("Country is required"),
+      city: yup.string().min(2).max(256).required("City is required"),
+      street: yup.string().min(2).max(256).required("Street is required"),
+      houseNumber: yup.number().required("House number is required").typeError("Must be a number"),
+      zip: yup.number().required("Zip is required").typeError("Must be a number")
+    })
+  });
+
   const formik = useFormik({
     initialValues: {
-      firstName: '',
-      middleName: '',
-      lastName: '',
-      state: '',
-      country: '',
-      city: '',
-      street: '',
-      houseNumber: '',
-      zip: '',
+      name: { first: '', middle: '', last: '' },
       phone: '',
       email: '',
-      imageUrl: '',
-      imageAlt: '',
       password: '',
-      confirmPassword: '',
+      image: { url: '', alt: '' },
+      address: {
+        state: '',
+        country: '',
+        city: '',
+        street: '',
+        houseNumber: '',
+        zip: ''
+      },
       isBusiness: false
     },
-    validationSchema: yup.object({
-      firstName: yup.string().required('First name is required'),
-      lastName: yup.string().required('Last name is required'),
-      country: yup.string().required('Country is required'),
-      city: yup.string().required('City is required'),
-      street: yup.string().required('Street is required'),
-      houseNumber: yup.string().required('House number is required'),
-      zip: yup.string().required('Zip is required'),
-      phone: yup.string().required('Phone is required'),
-      email: yup.string().email('Invalid email format').required('Email is required'),
-      password: yup.string().min(8, 'Password must be at least 8 characters').required('Password is required'),
-      confirmPassword: yup.string()
-        .oneOf([yup.ref('password'), null], 'Passwords must match')
-        .required('Please confirm your password'),
-    }),
+    validationSchema,
     onSubmit: async (values) => {
       try {
+        setError('');
+        setIsLoading(true);
+
         const userData = {
           name: {
-            first: values.firstName,
-            middle: values.middleName,
-            last: values.lastName
+            first: values.name.first,
+            middle: values.name.middle || "",
+            last: values.name.last
           },
           phone: values.phone,
           email: values.email,
           password: values.password,
           image: {
-            url: values.imageUrl,
-            alt: values.imageAlt
+            url: values.image.url || "https://i.ibb.co/B4rd7yx/default-Avatar.png",
+            alt: values.image.alt || "User Avatar"
           },
           address: {
-            state: values.state,
-            country: values.country,
-            city: values.city,
-            street: values.street,
-            houseNumber: values.houseNumber,
-            zip: values.zip
+            state: values.address.state || "",
+            country: values.address.country,
+            city: values.address.city,
+            street: values.address.street,
+            houseNumber: Number(values.address.houseNumber),
+            zip: Number(values.address.zip)
           },
-          isBusiness: values.isBusiness
+          isBusiness: Boolean(values.isBusiness)
         };
-//move to database later
-        const response = await registerUser(userData);
-        console.log('Registration successful:', response);
-        // Handle successful registration (e.g., redirect to login)
+
+        // First register the user
+        await registerUser(userData);
+
+        // Then log them in and get user data
+        const loginResponse = await handleLogin({
+          email: values.email,
+          password: values.password,
+          rememberMe: true
+        });
+
+        // Update the authentication state
+        if (loginResponse) {
+          setUser(loginResponse);
+        }
+
+        // Navigate after state updates are processed
+        setTimeout(() => {
+          navigate('/');
+        }, 100);
+
       } catch (error) {
-        console.error('Registration failed:', error);
-        // Handle registration error
+        const errorMessage = error.response?.data || 'Registration failed. Please try again.';
+        setError(errorMessage);
+        console.error('Registration error:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
   });
@@ -79,242 +136,21 @@ const Register = () => {
       <h2 className="text-center mb-4">Register</h2>
       <div className="row justify-content-center">
         <div className="col-md-8">
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
           <form onSubmit={formik.handleSubmit}>
             <div className="row g-3">
-              {/* Name Fields */}
-              <div className="col-md-4">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.firstName && formik.errors.firstName ? 'is-invalid' : ''}`}
-                    id="firstName"
-                    placeholder="First Name"
-                    {...formik.getFieldProps('firstName')}
-                  />
-                  <label htmlFor="firstName">First Name *</label>
-                  {formik.touched.firstName && formik.errors.firstName && (
-                    <div className="invalid-feedback">{formik.errors.firstName}</div>
-                  )}
-                </div>
-              </div>
+              {fields.map(field => (
+                <FormField 
+                  key={field.name} 
+                  {...field} 
+                  formik={formik}
+                />
+              ))}
 
-              <div className="col-md-4">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="middleName"
-                    placeholder="Middle Name"
-                    {...formik.getFieldProps('middleName')}
-                  />
-                  <label htmlFor="middleName">Middle Name</label>
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.lastName && formik.errors.lastName ? 'is-invalid' : ''}`}
-                    id="lastName"
-                    placeholder="Last Name"
-                    {...formik.getFieldProps('lastName')}
-                  />
-                  <label htmlFor="lastName">Last Name *</label>
-                  {formik.touched.lastName && formik.errors.lastName && (
-                    <div className="invalid-feedback">{formik.errors.lastName}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Address Fields */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="state"
-                    placeholder="State"
-                    {...formik.getFieldProps('state')}
-                  />
-                  <label htmlFor="state">State</label>
-                </div>
-              </div>
-
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.country && formik.errors.country ? 'is-invalid' : ''}`}
-                    id="country"
-                    placeholder="Country"
-                    {...formik.getFieldProps('country')}
-                  />
-                  <label htmlFor="country">Country *</label>
-                  {formik.touched.country && formik.errors.country && (
-                    <div className="invalid-feedback">{formik.errors.country}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.city && formik.errors.city ? 'is-invalid' : ''}`}
-                    id="city"
-                    placeholder="City"
-                    {...formik.getFieldProps('city')}
-                  />
-                  <label htmlFor="city">City *</label>
-                  {formik.touched.city && formik.errors.city && (
-                    <div className="invalid-feedback">{formik.errors.city}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-4">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.street && formik.errors.street ? 'is-invalid' : ''}`}
-                    id="street"
-                    placeholder="Street"
-                    {...formik.getFieldProps('street')}
-                  />
-                  <label htmlFor="street">Street *</label>
-                  {formik.touched.street && formik.errors.street && (
-                    <div className="invalid-feedback">{formik.errors.street}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-2">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.houseNumber && formik.errors.houseNumber ? 'is-invalid' : ''}`}
-                    id="houseNumber"
-                    placeholder="House Number"
-                    {...formik.getFieldProps('houseNumber')}
-                  />
-                  <label htmlFor="houseNumber">House Number *</label>
-                  {formik.touched.houseNumber && formik.errors.houseNumber && (
-                    <div className="invalid-feedback">{formik.errors.houseNumber}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-2">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className={`form-control ${formik.touched.zip && formik.errors.zip ? 'is-invalid' : ''}`}
-                    id="zip"
-                    placeholder="Zip"
-                    {...formik.getFieldProps('zip')}
-                  />
-                  <label htmlFor="zip">Zip *</label>
-                  {formik.touched.zip && formik.errors.zip && (
-                    <div className="invalid-feedback">{formik.errors.zip}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Contact Fields */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="tel"
-                    className={`form-control ${formik.touched.phone && formik.errors.phone ? 'is-invalid' : ''}`}
-                    id="phone"
-                    placeholder="Phone"
-                    {...formik.getFieldProps('phone')}
-                  />
-                  <label htmlFor="phone">Phone *</label>
-                  {formik.touched.phone && formik.errors.phone && (
-                    <div className="invalid-feedback">{formik.errors.phone}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="email"
-                    className={`form-control ${formik.touched.email && formik.errors.email ? 'is-invalid' : ''}`}
-                    id="email"
-                    placeholder="Email"
-                    {...formik.getFieldProps('email')}
-                  />
-                  <label htmlFor="email">Email *</label>
-                  {formik.touched.email && formik.errors.email && (
-                    <div className="invalid-feedback">{formik.errors.email}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Image Fields */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="imageUrl"
-                    placeholder="Image URL"
-                    {...formik.getFieldProps('imageUrl')}
-                  />
-                  <label htmlFor="imageUrl">Image URL</label>
-                </div>
-              </div>
-
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="imageAlt"
-                    placeholder="Image Alt"
-                    {...formik.getFieldProps('imageAlt')}
-                  />
-                  <label htmlFor="imageAlt">Image Alt</label>
-                </div>
-              </div>
-
-              {/* Password Fields */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="password"
-                    className={`form-control ${formik.touched.password && formik.errors.password ? 'is-invalid' : ''}`}
-                    id="password"
-                    placeholder="Password"
-                    {...formik.getFieldProps('password')}
-                  />
-                  <label htmlFor="password">Password *</label>
-                  {formik.touched.password && formik.errors.password && (
-                    <div className="invalid-feedback">{formik.errors.password}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="password"
-                    className={`form-control ${formik.touched.confirmPassword && formik.errors.confirmPassword ? 'is-invalid' : ''}`}
-                    id="confirmPassword"
-                    placeholder="Confirm Password"
-                    {...formik.getFieldProps('confirmPassword')}
-                  />
-                  <label htmlFor="confirmPassword">Confirm Password *</label>
-                  {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-                    <div className="invalid-feedback">{formik.errors.confirmPassword}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Business Account Checkbox */}
               <div className="col-12">
                 <div className="form-check">
                   <input
@@ -329,14 +165,20 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="col-12">
                 <button 
                   type="submit" 
                   className="btn btn-primary w-100"
-                  disabled={!formik.isValid || formik.isSubmitting}
+                  disabled={!formik.isValid || isLoading}
                 >
-                  Send
+                  {isLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Registering...
+                    </>
+                  ) : (
+                    'Register'
+                  )}
                 </button>
               </div>
             </div>

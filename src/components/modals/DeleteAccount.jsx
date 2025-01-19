@@ -1,6 +1,6 @@
-import { useTheme } from "../../providers/ThemeProvider";
+import { useTheme } from '../../providers/ThemeProvider';
 
-const Logout = ({ show, handleClose, handleLogout }) => {
+const DeleteAccount = ({ show, handleClose, handleDelete }) => {
   const { theme } = useTheme();
 
   if (!show) return null;
@@ -15,7 +15,7 @@ const Logout = ({ show, handleClose, handleLogout }) => {
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${theme.bgColor}`}>
             <div className={`modal-header ${theme.borderColor}`}>
-              <h5 className={`modal-title ${theme.textColor}`}>Log Out?</h5>
+              <h5 className={`modal-title ${theme.textColor}`}>Delete Account?</h5>
               <button 
                 type="button" 
                 className={`btn-close ${theme.isDark ? 'btn-close-white' : ''}`}
@@ -26,7 +26,7 @@ const Logout = ({ show, handleClose, handleLogout }) => {
 
             <div className="modal-body">
               <p className={theme.textColor}>
-                Are you sure you want to log out from your account?
+                Are you sure you want to delete your account permanently?
               </p>
             </div>
 
@@ -39,9 +39,9 @@ const Logout = ({ show, handleClose, handleLogout }) => {
               </button>
               <button
                 className="btn btn-danger"
-                onClick={handleLogout}
+                onClick={handleDelete}
               >
-                Log Out
+                Delete Account
               </button>
             </div>
           </div>
@@ -52,4 +52,4 @@ const Logout = ({ show, handleClose, handleLogout }) => {
   );
 };
 
-export default Logout;
+export default DeleteAccount;

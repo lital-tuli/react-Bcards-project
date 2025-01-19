@@ -25,16 +25,31 @@ export const getCardById = async (cardId) => {
 };
 
 // Get user's own cards
+// Find this existing function in CardService.js
 export const getMyCards = async () => {
   try {
+    // Check if token exists
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    console.log('Auth Token:', token ? 'Present' : 'Missing');
+
+    // Log the request
+    console.log('Sending request to /cards/my-cards');
     const response = await axiosInstance.get('/cards/my-cards');
+    
+    // Log the response
+    console.log('Response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching your cards:', error.response || error);
+    // Enhanced error logging
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
     throw new Error(error.response?.data?.message || 'Failed to fetch your cards');
   }
 };
-
 // Create new card
 export const createCard = async (cardData) => {
   try {
@@ -78,22 +93,36 @@ export const toggleLikeCard = async (cardId) => {
     throw new Error(error.response?.data?.message || 'Failed to update like status');
   }
 };
-
 export const toggleFavorite = async (cardId) => {
   try {
-    const response = await axiosInstance.patch(`/cards/${cardId}/favorite`);
+  
+    const response = await axiosInstance.patch(`/cards/${cardId}`);
+    
+    // Log successful response
+    console.log('Toggle favorite response:', response.data);
+    
     return response.data;
   } catch (error) {
-    console.error('Error toggling favorite:', error);
+    // Enhanced error logging
+    console.error('Favorite toggle error details:', {
+      cardId,
+      errorStatus: error.response?.status,
+      errorMessage: error.response?.data,
+      fullError: error
+    });
+    
     throw new Error(error.response?.data?.message || 'Failed to update favorite status');
   }
 };
 
+
 export const getFavoriteCards = async () => {
   try {
-    const response = await axiosInstance.get('/cards/favorites');
+    const response = await axiosInstance.get('/users/cards');
+    console.log('Favorite cards response:', response.data);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch favorite cards');
+    console.error('Error fetching favorite cards:', error);
+    throw new Error('Failed to fetch favorite cards');
   }
 };
