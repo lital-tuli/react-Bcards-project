@@ -1,27 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { toggleFavorite } from '../../services/CardService';
 import { useTheme } from '../../providers/ThemeProvider';
 
 const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
+  // Access necessary hooks and contexts
   const { isLoggedIn } = useAuth();
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
-  // Handler for favorite toggle
+  // Handle favorite toggling with proper error handling
   const handleFavoriteClick = async () => {
     if (!isLoggedIn) return;
     
     try {
+      setIsLoading(true);
+      setError('');
       await toggleFavorite(card._id);
+      
       if (onFavoriteChange) {
         onFavoriteChange(card._id);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      setError('Failed to update favorite status');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Format address object into a string
+  // Format address consistently
   const formatAddress = (address) => {
     if (!address) return '';
     const {
@@ -36,7 +45,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
     return `${street} ${houseNumber}, ${city}, ${state} ${zip}, ${country}`.trim().replace(/\s+/g, ' ');
   };
 
-  // Handlers for actions
+  // Handle contact actions
   const handlePhoneClick = () => {
     if (card.phone) {
       window.location.href = `tel:${card.phone}`;
@@ -49,6 +58,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
     }
   };
 
+  // Handle share functionality
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -58,17 +68,17 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Error sharing:', error);
+        console.log('Share failed:', error);
       }
     }
   };
 
-  // Default image if card image is missing or invalid
   const defaultImage = "https://placehold.co/400x200?text=Business+Card";
 
   return (
     <div className="col-md-4 mb-4">
       <div className={`card h-100 shadow ${theme.cardBg}`}>
+        {/* Card Image Section */}
         <div className="position-relative">
           <img 
             src={card.image?.url || defaultImage}
@@ -80,23 +90,36 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               e.target.onerror = null;
             }}
           />
+          {/* Favorite Button */}
           {isLoggedIn && (
-            <button 
-              className={`position-absolute end-0 top-0 m-2 btn ${theme.bgColor} rounded-circle p-2 shadow-sm border-0`}
-              onClick={handleFavoriteClick}
-              title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-            >
-              <i className={`bi bi-heart${card.isFavorite ? '-fill text-danger' : ''} fs-5`}></i>
-            </button>
-          )}
+    <button 
+      className="position-absolute end-0 top-0 m-2 btn rounded-circle p-0"
+      onClick={handleFavoriteClick}
+      disabled={isLoading}
+      // style={heartButtonStyle}
+      title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+    >
+      {isLoading ? (
+        <span className="spinner-border spinner-border-sm text-primary" />
+      ) : (
+        <i 
+          className={`bi ${card.isFavorite ? 'bi-heart-fill' : 'bi-heart'}`}
+          // style={heartIconStyle}
+        />
+      )}
+    </button>
+  )}
         </div>
         
+        {/* Card Content */}
         <div className="card-body">
+          {/* Title Section */}
           <div className="d-flex align-items-center mb-3">
             <i className="bi bi-building text-primary me-2"></i>
             <h5 className={`card-title mb-0 ${theme.textColor}`}>{card.title}</h5>
           </div>
 
+          {/* Subtitle Section */}
           {card.subtitle && (
             <div className="d-flex align-items-center mb-3">
               <i className="bi bi-file-text me-2"></i>
@@ -104,7 +127,9 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
             </div>
           )}
 
+          {/* Contact Information */}
           <div className="mt-3">
+            {/* Phone */}
             {card.phone && (
               <div 
                 className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
@@ -116,6 +141,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               </div>
             )}
 
+            {/* Email */}
             {card.email && (
               <div 
                 className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
@@ -127,6 +153,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               </div>
             )}
 
+            {/* Address */}
             {card.address && (
               <div className={`d-flex align-items-center mb-2 ${theme.textColor}`}>
                 <i className="bi bi-geo-alt-fill text-danger me-2"></i>
@@ -134,6 +161,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               </div>
             )}
 
+            {/* Website */}
             {card.web && (
               <div className="d-flex align-items-center">
                 <i className="bi bi-globe text-info me-2"></i>
@@ -150,8 +178,10 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
           </div>
         </div>
 
+        {/* Card Footer */}
         <div className={`card-footer bg-transparent ${theme.borderColor}`}>
           <div className="d-flex justify-content-between align-items-center">
+            {/* Share Button */}
             <button 
               className={`btn ${theme.btnOutline} btn-sm`}
               onClick={handleShare}
@@ -160,6 +190,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               Share
             </button>
 
+            {/* Edit and Delete Buttons (for card owner) */}
             {card.isOwner && (
               <div>
                 <button 
@@ -181,6 +212,13 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
             )}
           </div>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="alert alert-danger m-2 position-absolute bottom-0 start-0">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
