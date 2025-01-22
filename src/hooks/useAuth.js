@@ -11,7 +11,7 @@ export const useAuth = () => {
     return token ? jwtDecode(token) : null;
   });
   const navigate = useNavigate();
-
+  
   const handleLogin = useCallback(async (credentials) => {
     setIsLoading(true);
     setError(null);
@@ -21,19 +21,21 @@ export const useAuth = () => {
         credentials.password,
         credentials.rememberMe
       );
-
+  
       if (token) {
         const decodedUser = jwtDecode(token);
         setUser(decodedUser);
-        return decodedUser;
+        return true;  // Return true on success
       }
+      return false;
     } catch (err) {
       setError(err.message || "Login failed");
-      throw err;
+      return false;
     } finally {
       setIsLoading(false);
     }
   }, [navigate]);
+
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");

@@ -2,26 +2,50 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { toggleFavorite } from '../../services/CardService';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
-const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
-  // Access necessary hooks and contexts
+const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange, inFavoritesView = false }) => {
   const { isLoggedIn } = useAuth();
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Get current user to check if card is liked
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+  const userId = token ? jwtDecode(token)._id : null;
   
-  // Handle favorite toggling with proper error handling
-  const handleFavoriteClick = async () => {
+  const handleCardClick = (e) => {
+    if (
+      e.target.closest('button') || 
+      e.target.closest('a') || 
+      e.target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    navigate(`/card/${card._id}`);
+  };
+
+  const handleFavoriteClick = async (e) => {
+    e.stopPropagation();
     if (!isLoggedIn) return;
+    
+    if (inFavoritesView && onFavoriteChange) {
+      onFavoriteChange(card._id);
+      return;
+    }
     
     try {
       setIsLoading(true);
       setError('');
-      await toggleFavorite(card._id);
+      const result = await toggleFavorite(card._id);
       
-      if (onFavoriteChange) {
-        onFavoriteChange(card._id);
+      // Update the card's likes array with the result
+      if (result && result.likes) {
+        card.likes = result.likes;
       }
+      
     } catch (error) {
       console.error('Error toggling favorite:', error);
       setError('Failed to update favorite status');
@@ -30,7 +54,6 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
     }
   };
 
-  // Format address consistently
   const formatAddress = (address) => {
     if (!address) return '';
     const {
@@ -42,24 +65,29 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
       zip = ''
     } = address;
     
-    return `${street} ${houseNumber}, ${city}, ${state} ${zip}, ${country}`.trim().replace(/\s+/g, ' ');
+    return `${street} ${houseNumber}, ${city}, ${state} ${zip}, ${country}`
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/,\s*,/g, ',')
+      .replace(/,+/g, ',');
   };
 
-  // Handle contact actions
-  const handlePhoneClick = () => {
+  const handlePhoneClick = (e) => {
+    e.stopPropagation();
     if (card.phone) {
       window.location.href = `tel:${card.phone}`;
     }
   };
 
-  const handleEmailClick = () => {
+  const handleEmailClick = (e) => {
+    e.stopPropagation();
     if (card.email) {
       window.location.href = `mailto:${card.email}`;
     }
   };
 
-  // Handle share functionality
-  const handleShare = async () => {
+  const handleShare = async (e) => {
+    e.stopPropagation();
     if (navigator.share) {
       try {
         await navigator.share({
@@ -68,7 +96,9 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Share failed:', error);
+        if (error.name !== 'AbortError') {
+          console.error('Share failed:', error);
+        }
       }
     }
   };
@@ -77,8 +107,11 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
 
   return (
     <div className="col-md-4 mb-4">
-      <div className={`card h-100 shadow ${theme.cardBg}`}>
-        {/* Card Image Section */}
+      <div 
+        className={`card h-100 shadow ${theme.cardBg}`}
+        onClick={handleCardClick}
+        style={{ cursor: 'pointer' }}
+      >
         <div className="position-relative">
           <img 
             src={card.image?.url || defaultImage}
@@ -90,36 +123,39 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               e.target.onerror = null;
             }}
           />
-          {/* Favorite Button */}
           {isLoggedIn && (
-    <button 
-      className="position-absolute end-0 top-0 m-2 btn rounded-circle p-0"
-      onClick={handleFavoriteClick}
-      disabled={isLoading}
-      // style={heartButtonStyle}
-      title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-    >
-      {isLoading ? (
-        <span className="spinner-border spinner-border-sm text-primary" />
-      ) : (
-        <i 
-          className={`bi ${card.isFavorite ? 'bi-heart-fill' : 'bi-heart'}`}
-          // style={heartIconStyle}
-        />
-      )}
-    </button>
-  )}
+            <button 
+              className={`position-absolute end-0 top-0 m-2 btn ${theme.bgColor} rounded-circle p-2`}
+              onClick={handleFavoriteClick}
+              disabled={isLoading}
+              style={{ 
+                width: '40px', 
+                height: '40px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                transition: 'transform 0.2s ease'
+              }}
+              title={card.likes?.includes(userId) ? "Remove from Favorites" : "Add to Favorites"}
+            >
+              {isLoading ? (
+                <span className="spinner-border spinner-border-sm" />
+              ) : (
+                <i 
+                  className={`bi ${card.likes?.includes(userId) ? 'bi-heart-fill text-danger' : 'bi-heart'}`}
+                  style={{ fontSize: '1.2rem' }}
+                />
+              )}
+            </button>
+          )}
         </div>
         
-        {/* Card Content */}
         <div className="card-body">
-          {/* Title Section */}
           <div className="d-flex align-items-center mb-3">
             <i className="bi bi-building text-primary me-2"></i>
             <h5 className={`card-title mb-0 ${theme.textColor}`}>{card.title}</h5>
           </div>
 
-          {/* Subtitle Section */}
           {card.subtitle && (
             <div className="d-flex align-items-center mb-3">
               <i className="bi bi-file-text me-2"></i>
@@ -127,33 +163,33 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
             </div>
           )}
 
-          {/* Contact Information */}
           <div className="mt-3">
-            {/* Phone */}
             {card.phone && (
               <div 
-                className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
+                className={`d-flex align-items-center mb-2 ${theme.textColor}`}
                 onClick={handlePhoneClick}
                 style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
               >
                 <i className="bi bi-telephone-fill text-success me-2"></i>
                 <span>{card.phone}</span>
               </div>
             )}
 
-            {/* Email */}
             {card.email && (
               <div 
-                className={`d-flex align-items-center mb-2 ${theme.textColor} cursor-pointer`}
+                className={`d-flex align-items-center mb-2 ${theme.textColor}`}
                 onClick={handleEmailClick}
                 style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
               >
                 <i className="bi bi-envelope-fill text-primary me-2"></i>
                 <span>{card.email}</span>
               </div>
             )}
 
-            {/* Address */}
             {card.address && (
               <div className={`d-flex align-items-center mb-2 ${theme.textColor}`}>
                 <i className="bi bi-geo-alt-fill text-danger me-2"></i>
@@ -161,7 +197,6 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               </div>
             )}
 
-            {/* Website */}
             {card.web && (
               <div className="d-flex align-items-center">
                 <i className="bi bi-globe text-info me-2"></i>
@@ -170,6 +205,7 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
                   target="_blank" 
                   rel="noopener noreferrer"
                   className={`text-decoration-none ${theme.linkColor}`}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {card.web.replace(/^https?:\/\//, '')}
                 </a>
@@ -178,10 +214,8 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
           </div>
         </div>
 
-        {/* Card Footer */}
         <div className={`card-footer bg-transparent ${theme.borderColor}`}>
           <div className="d-flex justify-content-between align-items-center">
-            {/* Share Button */}
             <button 
               className={`btn ${theme.btnOutline} btn-sm`}
               onClick={handleShare}
@@ -190,12 +224,14 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
               Share
             </button>
 
-            {/* Edit and Delete Buttons (for card owner) */}
             {card.isOwner && (
               <div>
                 <button 
                   className={`btn ${theme.btnOutline} btn-sm me-2`}
-                  onClick={() => onEdit?.(card._id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.(card._id);
+                  }}
                 >
                   <i className="bi bi-pencil me-1"></i>
                   Edit
@@ -203,7 +239,10 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
                 
                 <button 
                   className="btn btn-outline-danger btn-sm"
-                  onClick={() => onDelete?.(card._id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(card._id);
+                  }}
                 >
                   <i className="bi bi-trash me-1"></i>
                   Delete
@@ -213,9 +252,8 @@ const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange }) => {
           </div>
         </div>
 
-        {/* Error Display */}
         {error && (
-          <div className="alert alert-danger m-2 position-absolute bottom-0 start-0">
+          <div className="alert alert-danger m-2" role="alert">
             {error}
           </div>
         )}

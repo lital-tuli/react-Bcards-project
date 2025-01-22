@@ -11,6 +11,7 @@ import ThemeProvider from './providers/ThemeProvider'
 import MyProfile from './components/users/MyProfile'
 import MyCards from './components/cards/MyCards'
 import FavoriteCards from './components/cards/FavoriteCards'
+import CardPage from './components/cards/CardPage'
 
 
 
@@ -18,6 +19,7 @@ import FavoriteCards from './components/cards/FavoriteCards'
 import 'bootstrap/dist/css/bootstrap.min.css'
 // Import Bootstrap JS
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import SnackbarProvider from './providers/snackBarProvider'
 
 
 
@@ -26,6 +28,8 @@ function App() {
 
   return (
    <ThemeProvider>
+        <SnackbarProvider>
+
  <Router>
           <Header darkMode={darkMode} setDarkMode={setDarkMode} />
           <Navbar />
@@ -39,6 +43,7 @@ function App() {
                 <Route path="/profile" element={<MyProfile />} />
                 <Route path="/my-cards" element={<MyCards />} />
                 <Route path="/favorites" element={<FavoriteCards />} />
+  <Route path="/card/:id" element={<CardPage />} />
 
               
               </Routes>
@@ -46,6 +51,8 @@ function App() {
           </main>
           <Footer />
         </Router>
+        </SnackbarProvider>
+
    </ThemeProvider>
        
 

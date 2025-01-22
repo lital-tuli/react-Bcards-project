@@ -1,6 +1,7 @@
+import { jwtDecode } from "jwt-decode";
 import axiosInstance from "../utils/axiosInstance";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+// const BASE_URL = import.meta.env.VITE_API_URL;
 
 // Get all cards
 export const getAllCards = async () => {
@@ -25,7 +26,6 @@ export const getCardById = async (cardId) => {
 };
 
 // Get user's own cards
-// Find this existing function in CardService.js
 export const getMyCards = async () => {
   try {
     // Check if token exists
@@ -82,47 +82,48 @@ export const deleteCard = async (cardId) => {
     throw new Error(error.response?.data?.message || 'Failed to delete card');
   }
 };
-
-// Like/Unlike card
-export const toggleLikeCard = async (cardId) => {
-  try {
-    const response = await axiosInstance.patch(`/cards/${cardId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating like status:', error.response || error);
-    throw new Error(error.response?.data?.message || 'Failed to update like status');
-  }
-};
-export const toggleFavorite = async (cardId) => {
-  try {
-  
-    const response = await axiosInstance.patch(`/cards/${cardId}`);
-    
-    // Log successful response
-    console.log('Toggle favorite response:', response.data);
-    
-    return response.data;
-  } catch (error) {
-    // Enhanced error logging
-    console.error('Favorite toggle error details:', {
-      cardId,
-      errorStatus: error.response?.status,
-      errorMessage: error.response?.data,
-      fullError: error
-    });
-    
-    throw new Error(error.response?.data?.message || 'Failed to update favorite status');
-  }
-};
-
-
+// get all liked cards 
 export const getFavoriteCards = async () => {
   try {
-    const response = await axiosInstance.get('/users/cards');
-    console.log('Favorite cards response:', response.data);
-    return response.data;
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+    
+    const userId = jwtDecode(token)._id;
+    const response = await axiosInstance.get('/cards');
+    
+    // Simple filtering of liked cards
+    const favoriteCards = response.data.filter(card => 
+      card.likes && Array.isArray(card.likes) && card.likes.includes(userId)
+    );
+
+    return favoriteCards;
   } catch (error) {
     console.error('Error fetching favorite cards:', error);
-    throw new Error('Failed to fetch favorite cards');
+    throw new Error(error.response?.data?.message || 'Failed to fetch favorite cards');
+  }
+};
+
+// like / unlike 
+export const toggleFavorite = async (cardId) => {
+  try {
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const response = await axiosInstance({
+      method: 'patch',
+      url: `/cards/${cardId}`,
+      headers: {
+        'x-auth-token': token
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling favorite status:', error);
+    throw new Error(error.response?.data?.message || 'Failed to update favorite status');
   }
 };
