@@ -3,8 +3,8 @@ import { getMyCards } from '../../services/CardService';
 import BusinessCard from '../cards/BusinessCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import CreateCard from '../cards/CreateCard';
-import EditCard from '../cards/EditCard';
 import { useSnack } from '../../providers/SnackbarProvider';
+import EditCard from '../modals/EditCard';
 
 const MyCards = () => {
   const { theme } = useTheme();
