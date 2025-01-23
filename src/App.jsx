@@ -19,7 +19,7 @@ import CardPage from './components/cards/CardPage'
 import 'bootstrap/dist/css/bootstrap.min.css'
 // Import Bootstrap JS
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-import SnackbarProvider from './providers/snackBarProvider'
+import SnackbarProvider from './providers/SnackbarProvider'
 
 
 

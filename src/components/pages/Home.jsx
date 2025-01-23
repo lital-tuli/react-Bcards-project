@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import CreateCard from '../cards/CreateCard';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useSnack } from '../../providers/SnackbarProvider';
 
 const Home = () => {
   const [cards, setCards] = useState([]);
@@ -17,10 +18,11 @@ const Home = () => {
   const { isLoggedIn } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
+  const setSnack = useSnack();
+
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search') || '';
 
-  // Reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [location.search]);
@@ -34,9 +36,11 @@ const Home = () => {
       setLoading(true);
       const data = await getAllCards();
       setCards(data);
+      setSnack('success', 'Cards loaded successfully');
     } catch (err) {
       console.error('Error details:', err);
       setError(err.message || 'Failed to fetch cards');
+      setSnack('danger', 'Failed to load cards');
     } finally {
       setLoading(false);
     }
@@ -44,10 +48,10 @@ const Home = () => {
 
   const handleCardCreated = () => {
     setShowCreateForm(false);
+    setSnack('success', 'Card created successfully');
     fetchCards();
   };
 
-  // Filter cards based on search query
   const filteredCards = cards.filter(card => 
     !searchQuery || (
       card.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,15 +60,11 @@ const Home = () => {
     )
   );
 
-  // Get current cards for pagination
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
   const currentCards = filteredCards.slice(indexOfFirstCard, indexOfLastCard);
-
-  // Calculate total pages
   const totalPages = Math.ceil(filteredCards.length / cardsPerPage);
 
-  // Generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pageNumbers = [];
     
@@ -87,11 +87,11 @@ const Home = () => {
     return pageNumbers;
   };
 
-  // Change page
   const paginate = (pageNumber) => {
     if (typeof pageNumber === 'number' && pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      setSnack('info', `Page ${pageNumber} of ${totalPages}`);
     }
   };
 
@@ -121,7 +121,6 @@ const Home = () => {
         </p>
       </header>
 
-      {/* Cards Grid */}
       <div className="row g-4">
         {loading ? (
           <div className="col-12 text-center py-5">
@@ -153,7 +152,6 @@ const Home = () => {
               />
             ))}
             
-            {/* Pagination Navigation */}
             {totalPages > 1 && (
               <div className="col-12">
                 <nav aria-label="Business cards pagination" className="mt-4">
@@ -199,7 +197,6 @@ const Home = () => {
         )}
       </div>
 
-      {/* Create Card Button */}
       {isLoggedIn && (
         <button
           className="btn btn-primary btn-lg rounded-circle position-fixed bottom-0 start-0 m-3 d-flex align-items-center justify-content-center shadow-lg"

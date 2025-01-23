@@ -1,264 +1,159 @@
+// BusinessCard.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { toggleFavorite } from '../../services/CardService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { useSnack } from '../../providers/SnackbarProvider';
+import DeleteCard from '../modals/DeleteCard';
+import EditCard from '../modals/EditCard';
 
-const BusinessCard = ({ card, onEdit, onDelete, onFavoriteChange, inFavoritesView = false }) => {
+const BusinessCard = ({ card, onRefresh }) => {
   const { isLoggedIn } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const setSnack = useSnack();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Get current user to check if card is liked
-  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-  const userId = token ? jwtDecode(token)._id : null;
-  
-  const handleCardClick = (e) => {
-    if (
-      e.target.closest('button') || 
-      e.target.closest('a') || 
-      e.target.closest('[role="button"]')
-    ) {
-      return;
-    }
-    navigate(`/card/${card._id}`);
-  };
+  const defaultImage = "https://placehold.co/400x200?text=Business+Card";
 
   const handleFavoriteClick = async (e) => {
     e.stopPropagation();
     if (!isLoggedIn) return;
     
-    if (inFavoritesView && onFavoriteChange) {
-      onFavoriteChange(card._id);
-      return;
-    }
-    
     try {
       setIsLoading(true);
-      setError('');
-      const result = await toggleFavorite(card._id);
-      
-      // Update the card's likes array with the result
-      if (result && result.likes) {
-        card.likes = result.likes;
-      }
-      
+      await toggleFavorite(card._id);
+      setSnack('success', card.isFavorite ? 'Removed from favorites' : 'Added to favorites');
+      if (onRefresh) onRefresh();
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      setError('Failed to update favorite status');
+      setSnack('danger', 'Failed to update favorite status');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatAddress = (address) => {
+  const formatAddress = address => {
     if (!address) return '';
-    const {
-      street = '',
-      houseNumber = '',
-      city = '',
-      state = '',
-      country = '',
-      zip = ''
-    } = address;
-    
-    return `${street} ${houseNumber}, ${city}, ${state} ${zip}, ${country}`
-      .trim()
-      .replace(/\s+/g, ' ')
-      .replace(/,\s*,/g, ',')
-      .replace(/,+/g, ',');
+    const { street = '', houseNumber = '', city = '', country = '' } = address;
+    return [street, houseNumber, city, country].filter(Boolean).join(', ');
   };
 
-  const handlePhoneClick = (e) => {
+  const handleActionClick = e => {
+    const action = e.currentTarget.dataset.action;
     e.stopPropagation();
-    if (card.phone) {
-      window.location.href = `tel:${card.phone}`;
-    }
+    if (action === 'edit') setShowEditModal(true);
+    if (action === 'delete') setShowDeleteModal(true);
   };
-
-  const handleEmailClick = (e) => {
-    e.stopPropagation();
-    if (card.email) {
-      window.location.href = `mailto:${card.email}`;
-    }
-  };
-
-  const handleShare = async (e) => {
-    e.stopPropagation();
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: card.title,
-          text: card.description,
-          url: window.location.href,
-        });
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Share failed:', error);
-        }
-      }
-    }
-  };
-
-  const defaultImage = "https://placehold.co/400x200?text=Business+Card";
 
   return (
-    <div className="col-md-4 mb-4">
-      <div 
-        className={`card h-100 shadow ${theme.cardBg}`}
-        onClick={handleCardClick}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className="position-relative">
-          <img 
-            src={card.image?.url || defaultImage}
-            className="card-img-top"
-            alt={card.image?.alt || card.title}
-            style={{ height: '200px', objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.src = defaultImage;
-              e.target.onerror = null;
-            }}
-          />
-          {isLoggedIn && (
-            <button 
-              className={`position-absolute end-0 top-0 m-2 btn ${theme.bgColor} rounded-circle p-2`}
-              onClick={handleFavoriteClick}
-              disabled={isLoading}
-              style={{ 
-                width: '40px', 
-                height: '40px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                transition: 'transform 0.2s ease'
-              }}
-              title={card.likes?.includes(userId) ? "Remove from Favorites" : "Add to Favorites"}
-            >
-              {isLoading ? (
-                <span className="spinner-border spinner-border-sm" />
-              ) : (
-                <i 
-                  className={`bi ${card.likes?.includes(userId) ? 'bi-heart-fill text-danger' : 'bi-heart'}`}
-                  style={{ fontSize: '1.2rem' }}
-                />
+    <>
+      <div className="col-md-4 mb-4">
+        <div className={`card h-100 shadow ${theme.cardBg}`}>
+          <div className="position-relative">
+            <img 
+              src={card.image?.url || defaultImage}
+              className="card-img-top"
+              alt={card.image?.alt || card.title}
+              style={{ height: '200px', objectFit: 'cover' }}
+              onError={e => { e.target.src = defaultImage; }}
+            />
+            
+            <div className="position-absolute top-0 end-0 m-2 d-flex gap-2">
+              {card.isOwner && (
+                <>
+                  <button 
+                    data-action="edit"
+                    onClick={handleActionClick}
+                    className="btn btn-light btn-sm rounded-circle"
+                    title="Edit Card"
+                  >
+                    <i className="bi bi-pencil-fill text-primary"></i>
+                  </button>
+                  <button 
+                    data-action="delete"
+                    onClick={handleActionClick}
+                    className="btn btn-light btn-sm rounded-circle"
+                    title="Delete Card"
+                  >
+                    <i className="bi bi-trash-fill text-danger"></i>
+                  </button>
+                </>
               )}
-            </button>
-          )}
-        </div>
-        
-        <div className="card-body">
-          <div className="d-flex align-items-center mb-3">
-            <i className="bi bi-building text-primary me-2"></i>
-            <h5 className={`card-title mb-0 ${theme.textColor}`}>{card.title}</h5>
-          </div>
-
-          {card.subtitle && (
-            <div className="d-flex align-items-center mb-3">
-              <i className="bi bi-file-text me-2"></i>
-              <p className={`card-subtitle mb-0 ${theme.textMuted}`}>{card.subtitle}</p>
+              
+              {isLoggedIn && (
+                <button 
+                  className="btn btn-light btn-sm rounded-circle"
+                  onClick={handleFavoriteClick}
+                  disabled={isLoading}
+                  title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                >
+                  {isLoggedIn ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    <i className={`bi ${card.isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart'}`} />
+                  )}
+                </button>
+              )}
             </div>
-          )}
+          </div>
 
-          <div className="mt-3">
-            {card.phone && (
-              <div 
-                className={`d-flex align-items-center mb-2 ${theme.textColor}`}
-                onClick={handlePhoneClick}
-                style={{ cursor: 'pointer' }}
-                role="button"
-                tabIndex={0}
-              >
-                <i className="bi bi-telephone-fill text-success me-2"></i>
-                <span>{card.phone}</span>
-              </div>
+          <div className="card-body">
+            <h5 className={`card-title ${theme.textColor}`}>
+              <i className="bi bi-building me-2 text-primary"></i>
+              {card.title}
+            </h5>
+            
+            {card.subtitle && (
+              <p className={`card-subtitle ${theme.textMuted}`}>
+                <i className="bi bi-info-circle me-2"></i>
+                {card.subtitle}
+              </p>
             )}
 
-            {card.email && (
-              <div 
-                className={`d-flex align-items-center mb-2 ${theme.textColor}`}
-                onClick={handleEmailClick}
-                style={{ cursor: 'pointer' }}
-                role="button"
-                tabIndex={0}
-              >
-                <i className="bi bi-envelope-fill text-primary me-2"></i>
-                <span>{card.email}</span>
-              </div>
-            )}
-
-            {card.address && (
-              <div className={`d-flex align-items-center mb-2 ${theme.textColor}`}>
-                <i className="bi bi-geo-alt-fill text-danger me-2"></i>
-                <span>{formatAddress(card.address)}</span>
-              </div>
-            )}
-
-            {card.web && (
-              <div className="d-flex align-items-center">
-                <i className="bi bi-globe text-info me-2"></i>
-                <a 
-                  href={card.web} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className={`text-decoration-none ${theme.linkColor}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {card.web.replace(/^https?:\/\//, '')}
+            <div className={`mt-3 ${theme.textColor}`}>
+              {card.phone && (
+                <a href={`tel:${card.phone}`} className="d-block mb-2 text-decoration-none">
+                  <i className="bi bi-telephone-fill text-success me-2"></i>
+                  {card.phone}
                 </a>
-              </div>
-            )}
+              )}
+              {card.email && (
+                <a href={`mailto:${card.email}`} className="d-block mb-2 text-decoration-none">
+                  <i className="bi bi-envelope-fill text-primary me-2"></i>
+                  {card.email}
+                </a>
+              )}
+              {card.address && (
+                <p className="mb-2">
+                  <i className="bi bi-geo-alt-fill text-danger me-2"></i>
+                  {formatAddress(card.address)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-
-        <div className={`card-footer bg-transparent ${theme.borderColor}`}>
-          <div className="d-flex justify-content-between align-items-center">
-            <button 
-              className={`btn ${theme.btnOutline} btn-sm`}
-              onClick={handleShare}
-            >
-              <i className="bi bi-share me-1"></i>
-              Share
-            </button>
-
-            {card.isOwner && (
-              <div>
-                <button 
-                  className={`btn ${theme.btnOutline} btn-sm me-2`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit?.(card._id);
-                  }}
-                >
-                  <i className="bi bi-pencil me-1"></i>
-                  Edit
-                </button>
-                
-                <button 
-                  className="btn btn-outline-danger btn-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete?.(card._id);
-                  }}
-                >
-                  <i className="bi bi-trash me-1"></i>
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {error && (
-          <div className="alert alert-danger m-2" role="alert">
-            {error}
-          </div>
-        )}
       </div>
-    </div>
+
+      {showEditModal && (
+        <EditCard
+          show={showEditModal}
+          handleClose={() => setShowEditModal(false)}
+          card={card}
+          onRefresh={onRefresh}
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteCard
+          show={showDeleteModal}
+          handleClose={() => setShowDeleteModal(false)}
+          handleDeleteCard={onRefresh}
+        />
+      )}
+    </>
   );
 };
 

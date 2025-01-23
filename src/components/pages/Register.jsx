@@ -4,15 +4,18 @@ import { registerUser } from '../../services/UserService';
 import { useNavigate } from 'react-router-dom';
 import FormField from '../common/FormField';
 import { useAuth } from '../../hooks/useAuth';
+import { useSnack } from '../../providers/SnackbarProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import * as yup from 'yup';
 
 const Register = () => {
   const navigate = useNavigate();
   const [error, setError] = useState('');
-  const { handleLogin, setUser } = useAuth();  // Get setUser from useAuth
+  const { handleLogin, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const setSnack = useSnack();
+  const { theme } = useTheme();
 
-  // Define form fields with proper structure
   const fields = [
     { name: "name.first", label: "First Name", type: "text", col: "4" },
     { name: "name.middle", label: "Middle Name", type: "text", col: "4", required: false },
@@ -30,7 +33,6 @@ const Register = () => {
     { name: "address.zip", label: "Zip", type: "number", col: "2" }
   ];
 
-  // Validation schema following documentation requirements
   const validationSchema = yup.object({
     name: yup.object({
       first: yup.string().min(2).max(256).required("First name is required"),
@@ -76,6 +78,7 @@ const Register = () => {
       try {
         setError('');
         setIsLoading(true);
+        setSnack('info', 'Processing registration...');
 
         const userData = {
           name: {
@@ -101,30 +104,24 @@ const Register = () => {
           isBusiness: Boolean(values.isBusiness)
         };
 
-        // First register the user
         await registerUser(userData);
+        setSnack('success', 'Registration successful!');
 
-        // Then log them in and get user data
-        const loginResponse = await handleLogin({
+        const loginSuccess = await handleLogin({
           email: values.email,
           password: values.password,
           rememberMe: true
         });
 
-        // Update the authentication state
-        if (loginResponse) {
-          setUser(loginResponse);
-        }
-
-        // Navigate after state updates are processed
-        setTimeout(() => {
+        if (loginSuccess) {
+          setSnack('success', 'Successfully logged in!');
           navigate('/');
-        }, 100);
+        }
 
       } catch (error) {
         const errorMessage = error.response?.data || 'Registration failed. Please try again.';
         setError(errorMessage);
-        console.error('Registration error:', error);
+        setSnack('danger', `Registration failed: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -133,15 +130,16 @@ const Register = () => {
 
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4">Register</h2>
+      <h2 className={`text-center mb-4 ${theme.textColor}`}>Register</h2>
       <div className="row justify-content-center">
         <div className="col-md-8">
           {error && (
             <div className="alert alert-danger" role="alert">
+              <i className="bi bi-exclamation-circle-fill me-2"></i>
               {error}
             </div>
           )}
-          <form onSubmit={formik.handleSubmit}>
+          <form onSubmit={formik.handleSubmit} className="p-4 shadow-lg rounded">
             <div className="row g-3">
               {fields.map(field => (
                 <FormField 
@@ -159,7 +157,7 @@ const Register = () => {
                     id="isBusiness"
                     {...formik.getFieldProps('isBusiness')}
                   />
-                  <label className="form-check-label" htmlFor="isBusiness">
+                  <label className={`form-check-label ${theme.textColor}`} htmlFor="isBusiness">
                     Register as Business Account
                   </label>
                 </div>
@@ -168,7 +166,7 @@ const Register = () => {
               <div className="col-12">
                 <button 
                   type="submit" 
-                  className="btn btn-primary w-100"
+                  className={`btn ${theme.btnPrimary} w-100`}
                   disabled={!formik.isValid || isLoading}
                 >
                   {isLoading ? (

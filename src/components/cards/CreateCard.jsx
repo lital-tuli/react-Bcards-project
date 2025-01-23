@@ -16,11 +16,13 @@ import {
   addressValidation
 } from "../../services/schemaService";
 import FormField from "../common/FormField";
+import { useSnack } from "../../providers/SnackbarProvider";
 
-function CreateCard({ onCardCreated }) {
+const CreateCard = ({ onCardCreated }) => {
   const { theme } = useTheme();
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const setSnack = useSnack();
 
   const formik = useFormik({
     initialValues: {
@@ -56,27 +58,22 @@ function CreateCard({ onCardCreated }) {
     onSubmit: async (values) => {
       try {
         const newCard = await createCard(values);
+        setSnack('success', 'Card created successfully!');
         if (onCardCreated) {
           onCardCreated(newCard);
         }
         navigate(`/my-cards`);
       } catch (error) {
-        // Handle specific authentication error
-        if (error.response && error.response.status === 401) {
+        if (error.response?.status === 401) {
           setErrorMessage("Authentication required. Please log in.");
-          // Optional: redirect to login page after a short delay
+          setSnack('warning', 'Please login to create a card');
           setTimeout(() => {
             navigate('/login');
           }, 2000);
         } else {
-          // Handle other types of errors
-          setErrorMessage(
-            error.response?.data || 
-            error.message || 
-            "Failed to create card. Please try again."
-          );
+          setErrorMessage(error.response?.data || error.message || "Failed to create card");
+          setSnack('danger', 'Failed to create card');
         }
-        console.error("Create card error:", error);
       }
     },
   });

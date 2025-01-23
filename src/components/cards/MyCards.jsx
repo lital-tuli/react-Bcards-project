@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { getMyCards } from '../../services/CardService';
 import BusinessCard from '../cards/BusinessCard';
 import { useTheme } from '../../providers/ThemeProvider';
-import CreateCard from './CreateCard';
+import CreateCard from '../cards/CreateCard';
+import EditCard from '../cards/EditCard';
+import { useSnack } from '../../providers/SnackbarProvider';
 
 const MyCards = () => {
   const { theme } = useTheme();
@@ -10,14 +12,18 @@ const MyCards = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingCard, setEditingCard] = useState(null);
+  const setSnack = useSnack();
 
   const fetchMyCards = async () => {
     try {
+      setLoading(true);
       const data = await getMyCards();
       setCards(data);
+      setSnack('success', 'Cards loaded successfully');
     } catch (err) {
       setError(err.message);
-      console.error('Failed to fetch cards:', err);
+      setSnack('danger', 'Failed to load cards');
     } finally {
       setLoading(false);
     }
@@ -26,6 +32,10 @@ const MyCards = () => {
   useEffect(() => {
     fetchMyCards();
   }, []);
+
+  const handleEdit = (card) => {
+    setEditingCard(card);
+  };
 
   const handleCardCreated = () => {
     setShowCreateForm(false);
@@ -42,12 +52,16 @@ const MyCards = () => {
     );
   }
 
-  if (showCreateForm) {
-    return <CreateCard onCardCreated={handleCardCreated} />;
-  }
-
   return (
     <div className="container py-4">
+      {editingCard && (
+        <EditCard
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onRefresh={fetchMyCards}
+        />
+      )}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className={theme.textColor}>My Business Cards</h1>
         <button
@@ -60,12 +74,12 @@ const MyCards = () => {
       </div>
 
       {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
+        <div className="alert alert-danger" role="alert">{error}</div>
       )}
 
-      {cards.length === 0 ? (
+      {showCreateForm ? (
+        <CreateCard onCardCreated={handleCardCreated} />
+      ) : cards.length === 0 ? (
         <div className={`text-center ${theme.textColor}`}>
           <i className="bi bi-collection fs-1 d-block mb-3"></i>
           <p>You haven't created any business cards yet.</p>
@@ -83,6 +97,7 @@ const MyCards = () => {
               key={card._id}
               card={card}
               onRefresh={fetchMyCards}
+              onEdit={() => handleEdit(card)}
             />
           ))}
         </div>
