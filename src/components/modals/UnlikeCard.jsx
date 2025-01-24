@@ -14,7 +14,6 @@ const UnlikeCard = ({ show, handleClose, handleUnlikeCard }) => {
       
       await handleUnlikeCard();
       
-      // Don't close the modal here - let the parent component handle it
     } catch (error) {
       setError('Failed to unlike card. Please try again.');
       console.error('Unlike card error:', error);

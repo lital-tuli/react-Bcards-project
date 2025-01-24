@@ -1,9 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 import axiosInstance from "../utils/axiosInstance";
 
-// const BASE_URL = import.meta.env.VITE_API_URL;
 
-// Get all cards
 export const getAllCards = async () => {
   try {
     const response = await axiosInstance.get('/cards');
@@ -14,7 +12,6 @@ export const getAllCards = async () => {
   }
 };
 
-// Get card by ID
 export const getCardById = async (cardId) => {
   try {
     const response = await axiosInstance.get(`/cards/${cardId}`);
@@ -25,28 +22,23 @@ export const getCardById = async (cardId) => {
   }
 };
 
-// Get user's own cards
 export const getMyCards = async () => {
   try {
-    // Check if token exists
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    console.log('Auth Token:', token ? 'Present' : 'Missing');
+    // console.log('Auth Token:', token ? 'Present' : 'Missing');
 
-    // Log the request
     console.log('Sending request to /cards/my-cards');
     const response = await axiosInstance.get('/cards/my-cards');
     
-    // Log the response
-    console.log('Response:', response.data);
+    // console.log('Response:', response.data);
     return response.data;
   } catch (error) {
-    // Enhanced error logging
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+    // console.error('Error details:', {
+    //   message: error.message,
+    //   response: error.response?.data,
+    //   status: error.response?.status,
+    //   headers: error.response?.headers
+    // });
     throw new Error(error.response?.data?.message || 'Failed to fetch your cards');
   }
 };

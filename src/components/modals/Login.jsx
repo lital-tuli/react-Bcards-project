@@ -6,23 +6,18 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useAuth } from '../../hooks/useAuth';
 
 const Login = ({ show, onClose }) => {
-  // Get the theme-related variables and functions from the ThemeProvider
   const { theme, isDark } = useTheme();
 
-  // Get the navigation function from React Router
   const navigate = useNavigate();
 
-  // Get the login-related functions and state from the AuthProvider
   const { handleLogin, isLoading, error } = useAuth();
 
-  // Initialize the Formik form
   const formik = useFormik({
     initialValues: { 
       email: "", 
       password: "",
       rememberMe: false
     },
-    // Define the validation schema for the form fields
     validationSchema: yup.object({
       email: yup.string()
         .required("Email is required")
@@ -31,12 +26,10 @@ const Login = ({ show, onClose }) => {
         .required("Password is required")
         .min(6, "Password must be at least 6 characters"),
     }),
-    // Handle the form submission
     onSubmit: async (values) => {
       try {
         const success = await handleLogin(values);
         if (success) {
-          // Close the modal if it's open
           if (onClose) onClose();
           navigate('/');
           window.location.reload();
@@ -62,7 +55,6 @@ const Login = ({ show, onClose }) => {
             <div className={`modal-content ${theme.bgColor}`}>
               <div className={`modal-header border-${theme.borderColor}`}>
                 <h5 className={`modal-title ${theme.textColor}`}>Login to Your Account</h5>
-                {/* Add a button to close the modal */}
                 <button 
                   type="button" 
                   className={`btn-close ${isDark ? 'btn-close-white' : ''}`}
@@ -72,9 +64,7 @@ const Login = ({ show, onClose }) => {
               </div>
 
               <div className="modal-body">
-                {/* Render the login form */}
                 <form onSubmit={formik.handleSubmit} noValidate>
-                  {/* Display an error message if there's an error during login */}
                   {error && (
                     <div className="alert alert-danger" role="alert">
                       {error}
@@ -92,7 +82,6 @@ const Login = ({ show, onClose }) => {
                       {...formik.getFieldProps('email')}
                     />
                     <label className={theme.textColor} htmlFor="email">Email address</label>
-                    {/* Display the email error message if there's an error */}
                     {formik.touched.email && formik.errors.email && (
                       <div className="invalid-feedback">{formik.errors.email}</div>
                     )}
@@ -109,7 +98,6 @@ const Login = ({ show, onClose }) => {
                       {...formik.getFieldProps('password')}
                     />
                     <label className={theme.textColor} htmlFor="password">Password</label>
-                    {/* Display the password error message if there's an error */}
                     {formik.touched.password && formik.errors.password && (
                       <div className="invalid-feedback">{formik.errors.password}</div>
                     )}
@@ -134,7 +122,6 @@ const Login = ({ show, onClose }) => {
                             type="submit"
                             disabled={formik.isSubmitting || isLoading}
                             >
-                            {/* Display a loading spinner if the login is in progress */}
                     {isLoading ? (
                       <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     ) : null}
@@ -160,7 +147,6 @@ const Login = ({ show, onClose }) => {
           </div>
         </div>
       )}
-      {/* Render the modal backdrop if the modal is open */}
       {show && <div className="modal-backdrop show"></div>}
     </>
   );

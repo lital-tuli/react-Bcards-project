@@ -9,7 +9,6 @@ const Header = () => {
     <div className={`${theme.navbarBg} py-2`}>
       <div className="container position-relative">
         <div className="row align-items-center">
-          {/* Center - Logo */}
           <div className="col-12 text-center">
             <Link 
               to="/" 

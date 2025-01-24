@@ -105,7 +105,6 @@ const Navbar = () => {
               </li>
             </ul>
             
-            {/* Centered SearchBar */}
             <div className="d-flex justify-content-center flex-grow-1 my-3 my-lg-0">
               <SearchBar />
             </div>
