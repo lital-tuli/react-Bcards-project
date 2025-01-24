@@ -83,7 +83,7 @@ vite.config.js
 ## Installation
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-username/react-bcards-project.git
+   git clone https://github.com/lital-tuli/react-Bcards-project.git
    ```
 2. Change to the project directory:
    ```sh
