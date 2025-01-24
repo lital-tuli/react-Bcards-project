@@ -20,7 +20,6 @@ const MyCards = () => {
       setLoading(true);
       const data = await getMyCards();
       setCards(data);
-      setSnack('success', 'Cards loaded successfully');
     } catch (err) {
       setError(err.message);
       setSnack('danger', 'Failed to load cards');

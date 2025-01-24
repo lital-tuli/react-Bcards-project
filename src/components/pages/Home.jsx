@@ -29,7 +29,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchCards();
-  }, []);
+  }, [isLoggedIn]);
 
   const fetchCards = async () => {
     try {
@@ -38,7 +38,6 @@ const Home = () => {
       setCards(data);
       setSnack('success', 'Cards loaded successfully');
     } catch (err) {
-      console.error('Error details:', err);
       setError(err.message || 'Failed to fetch cards');
       setSnack('danger', 'Failed to load cards');
     } finally {

@@ -1,17 +1,25 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useState, useEffect } from "react";
 
 // Create the context
 export const ThemeContext = createContext(null);
 
 // Custom Theme Provider component
 const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Retrieve theme preference from localStorage on initial load
+    const savedTheme = localStorage.getItem('app-theme');
+    return savedTheme === 'dark';
+  });
+
+  useEffect(() => {
+    // Update Bootstrap's theme attribute and localStorage
+    document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('app-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   const toggleDarkMode = useCallback(() => {
     setIsDark((prev) => !prev);
-    // Toggle Bootstrap's data-bs-theme attribute
-    document.documentElement.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
-  }, [isDark]);
+  }, []);
 
   // Theme object with Bootstrap classes
   const theme = {

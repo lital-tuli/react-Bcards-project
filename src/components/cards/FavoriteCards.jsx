@@ -5,6 +5,7 @@ import BusinessCard from './BusinessCard';
 import { getFavoriteCards, toggleFavorite, deleteCard } from '../../services/CardService';
 import DeleteCard from '../modals/DeleteCard';
 import UnlikeCard from '../modals/UnlikeCard';
+import { useTheme } from '../../providers/ThemeProvider';
 
 const FavoriteCards = () => {
   const [favorites, setFavorites] = useState([]);
@@ -12,6 +13,7 @@ const FavoriteCards = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUnlikeModal, setShowUnlikeModal] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState(null);
+  const { theme } = useTheme();
 
   const token = sessionStorage.getItem("token") || localStorage.getItem("token");
   const user = token ? jwtDecode(token) : null;
@@ -34,17 +36,13 @@ const FavoriteCards = () => {
     try {
       const result = await toggleFavorite(selectedCardId);
       
-      if (!result.likes.includes(user._id)) {
-        // Update local state to remove the card
-        setFavorites(prevCards => 
-          prevCards.filter(card => card._id !== selectedCardId)
-        );
-        setShowUnlikeModal(false);
-        setSelectedCardId(null);
-      } else {
-        // If unlike failed, refresh the list
-        await fetchFavorites();
-      }
+      // Remove the card from favorites list
+      setFavorites(prevCards => 
+        prevCards.filter(card => card._id !== selectedCardId)
+      );
+      
+      setShowUnlikeModal(false);
+      setSelectedCardId(null);
     } catch (error) {
       console.error('Error unliking card:', error);
       await fetchFavorites(); // Refresh on error
@@ -91,7 +89,7 @@ const FavoriteCards = () => {
         handleUnlikeCard={handleUnlike}
       />
 
-      <h1 className="mb-4">My Favorite Cards</h1>
+      <h1 className={`mb-4 ${theme.textColor}`}>My Favorite Cards</h1>
 
       {loading ? (
         <div className="d-flex justify-content-center my-5">
@@ -106,10 +104,12 @@ const FavoriteCards = () => {
               <BusinessCard
                 key={card._id}
                 card={card}
+                onRefresh={fetchFavorites}
                 onFavoriteChange={() => {
                   setSelectedCardId(card._id);
                   setShowUnlikeModal(true);
                 }}
+                preventDefaultFavoriteAction={true}
                 onDelete={() => {
                   setSelectedCardId(card._id);
                   setShowDeleteModal(true);

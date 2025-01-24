@@ -1,18 +1,25 @@
-// DeleteCard.jsx
 import React, { useState } from 'react';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useSnack } from '../../providers/SnackbarProvider';
+import { deleteCard } from '../../services/CardService';
 
-const DeleteCard = ({ show, handleClose, handleDeleteCard }) => {
+const DeleteCard = ({ show, handleClose, cardId, onDelete }) => {
   const { theme } = useTheme();
   const setSnack = useSnack();
   const [isDeleting, setIsDeleting] = useState(false);
 
+
   const handleDelete = async () => {
+    if (!cardId) {
+      setSnack('danger', 'Cannot delete card: missing ID');
+      return;
+    }
+
     try {
       setIsDeleting(true);
-      await handleDeleteCard();
+      await deleteCard(cardId);
       setSnack('success', 'Card deleted successfully');
+      onDelete();
       handleClose();
     } catch (error) {
       setSnack('danger', 'Failed to delete card');
@@ -20,7 +27,6 @@ const DeleteCard = ({ show, handleClose, handleDeleteCard }) => {
       setIsDeleting(false);
     }
   };
-
   if (!show) return null;
 
   return (

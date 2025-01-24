@@ -6,9 +6,13 @@ import TypeChange from '../modals/TypeChange';
 import Logout from '../modals/Logout';
 import DeleteAccount from '../modals/DeleteAccount';
 import { deleteUser, logoutUser, updateUserToken, updateUserType } from '../../services/UserService';
+import { useSnack } from '../../providers/SnackbarProvider';
+import { useNavigate } from 'react-router-dom';
 
 const UserCard = ({ userData }) => {
   const { theme } = useTheme();
+  const setSnack = useSnack();
+  const navigate = useNavigate();
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -16,7 +20,16 @@ const UserCard = ({ userData }) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-  const userId = jwtDecode(token)._id;
+  const userId = token ? jwtDecode(token)?._id : null;
+
+  if (!userData || !userId) {
+    return (
+      <div className="alert alert-warning">
+        No user data available or not logged in.
+        Please try logging in again.
+      </div>
+    );
+  }
 
   const handleConfirmTypeChange = async () => {
     try {
@@ -25,15 +38,20 @@ const UserCard = ({ userData }) => {
       setShowTypeModal(false);
       setPassword("");
       setErrorMessage("");
+      setSnack('success', 'Account type changed successfully');
       window.location.reload();
     } catch (error) {
       setErrorMessage(
         error.response?.status === 400 
           ? "Incorrect password" 
-          : "User type change failed"
+          : "Failed to change account type. Please try again."
       );
-      console.error("Type Change Error:", error);
     }
+  };
+
+  const handleTypeChange = async (e) => {
+    e.preventDefault();
+    setShowTypeModal(true);
   };
 
   const handleCloseTypeModal = () => {
@@ -49,8 +67,10 @@ const UserCard = ({ userData }) => {
   const handleLogout = async () => {
     try {
       await logoutUser();
+      navigate('/');
     } catch (error) {
       console.error("Logout error:", error);
+      setSnack('error', 'Failed to logout. Please try again.');
     }
   };
 
@@ -62,8 +82,11 @@ const UserCard = ({ userData }) => {
     try {
       await deleteUser(userId);
       await logoutUser();
+      navigate('/');
+      setSnack('success', 'Account deleted successfully');
     } catch (error) {
       console.error("Delete account error:", error);
+      setSnack('error', 'Failed to delete account. Please try again.');
     }
   };
 
@@ -95,7 +118,6 @@ const UserCard = ({ userData }) => {
 
       <div className="container">
         <div className="row">
-          {/* Left Column */}
           <div className="col-12 col-md-6">
             <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
@@ -154,7 +176,6 @@ const UserCard = ({ userData }) => {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="col-12 col-md-6">
             <div className={`card mb-3 ${theme.cardBg} ${theme.borderColor}`}>
               <div className="card-body">
@@ -185,7 +206,7 @@ const UserCard = ({ userData }) => {
                 </p>
                 <button 
                   className={`btn ${theme.btnOutline} w-100`}
-                  onClick={() => setShowTypeModal(true)}
+                  onClick={handleTypeChange}
                 >
                   Change to {userData.isBusiness ? "Customer" : "Business"} Account
                 </button>

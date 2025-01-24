@@ -47,6 +47,7 @@ export const useAuth = () => {
     setUser(null);
     setSnack('info', 'Logged out successfully');
     navigate("/");
+    window.location.reload(); 
   }, [navigate, setSnack]);
 
   useEffect(() => {

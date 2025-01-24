@@ -3,10 +3,10 @@ import { getUserById, updateUser } from "../../services/UserService";
 import { jwtDecode } from "jwt-decode";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useNavigate } from "react-router-dom";
 import { Spinner } from "react-bootstrap";
+import { useTheme } from "../../providers/ThemeProvider";
+import { useSnack } from "../../providers/SnackbarProvider";
 
-// Form validation schemas
 const nameValidation = Yup.object({
   first: Yup.string()
     .required("First name is required")
@@ -87,11 +87,12 @@ const FormField = ({ name, label, placeholder, type = "text", formik, capitalize
 };
 
 const EditUserDetails = ({ setDisplay }) => {
+  const { theme } = useTheme();
+  const setSnack = useSnack();
   const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-  const userId = jwtDecode(token)._id;
+  const userId = token ? jwtDecode(token)?._id : null;
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const navigate = useNavigate();
 
   const formik = useFormik({
     initialValues: {
@@ -122,17 +123,37 @@ const EditUserDetails = ({ setDisplay }) => {
     }),
     onSubmit: async (values) => {
       try {
-        await updateUser(values, userId);
-        setDisplay(false);
-        navigate("/profile");
+        const updatedUser = {
+          name: values.name,
+          phone: values.phone,
+          image: values.image,
+          address: {
+            ...values.address,
+            houseNumber: Number(values.address.houseNumber),
+            zip: Number(values.address.zip)
+          }
+        };
+        
+        await updateUser(updatedUser, userId);
+        setSnack('success', 'Profile updated successfully');
+        if (setDisplay) {
+          setDisplay(false);
+        }
+        window.location.reload();
       } catch (error) {
         console.error("Update failed:", error);
+        setSnack('error', 'Failed to update profile');
         setErrorMessage("Failed to update user details.");
       }
     },
   });
-
   useEffect(() => {
+    if (!userId) {
+      setErrorMessage("No user ID found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
     const fetchUserData = async () => {
       try {
         const userData = await getUserById();
@@ -144,16 +165,16 @@ const EditUserDetails = ({ setDisplay }) => {
           },
           phone: userData.phone || "",
           image: {
-            url: userData.image.url || "",
-            alt: userData.image.alt || "",
+            url: userData.image?.url || "",
+            alt: userData.image?.alt || "",
           },
           address: {
-            state: userData.address.state || "",
-            country: userData.address.country || "",
-            city: userData.address.city || "",
-            street: userData.address.street || "",
-            houseNumber: userData.address.houseNumber || "",
-            zip: userData.address.zip || "",
+            state: userData.address?.state || "",
+            country: userData.address?.country || "",
+            city: userData.address?.city || "",
+            street: userData.address?.street || "",
+            houseNumber: userData.address?.houseNumber?.toString() || "",
+            zip: userData.address?.zip?.toString() || "",
           },
         });
       } catch (error) {
@@ -165,7 +186,7 @@ const EditUserDetails = ({ setDisplay }) => {
     };
 
     fetchUserData();
-  }, []);
+  }, [userId]);
 
   if (loading) {
     return (
@@ -291,19 +312,24 @@ const EditUserDetails = ({ setDisplay }) => {
         <div className="d-flex justify-content-center gap-2 mb-3">
           <button
             type="button"
-            className="btn btn-outline-secondary"
+            className={`btn ${theme.btnOutline}`}
             onClick={() => window.location.reload()}
-            style={{ width: "100px" }}
           >
             Back
           </button>
           <button
             type="button"
-            className="btn btn-outline-warning"
+            className={`btn ${theme.btnOutline}`}
             onClick={() => formik.resetForm()}
-            style={{ width: "100px" }}
           >
             Clear
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!formik.isValid || formik.isSubmitting}
+          >
+            Save Changes
           </button>
         </div>
 
@@ -312,16 +338,6 @@ const EditUserDetails = ({ setDisplay }) => {
             {errorMessage}
           </div>
         )}
-
-        <div className="d-flex justify-content-center">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: "200px" }}
-          >
-            Save Changes
-          </button>
-        </div>
       </form>
     </div>
   );

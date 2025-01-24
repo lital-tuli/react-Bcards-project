@@ -1,4 +1,3 @@
-// BusinessCard.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { toggleFavorite } from '../../services/CardService';
@@ -7,15 +6,25 @@ import { useNavigate } from 'react-router-dom';
 import { useSnack } from '../../providers/SnackbarProvider';
 import DeleteCard from '../modals/DeleteCard';
 import EditCard from '../modals/EditCard';
+import UnlikeCard from '../modals/UnlikeCard';
 
-const BusinessCard = ({ card, onRefresh }) => {
-  const { isLoggedIn } = useAuth();
+const BusinessCard = ({ 
+  card, 
+  onRefresh, 
+  inFavoritesView = false, 
+  onFavoriteChange,
+  preventDefaultFavoriteAction = false
+}) => {
+  const { isLoggedIn, user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const setSnack = useSnack();
   const [isLoading, setIsLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUnlikeModal, setShowUnlikeModal] = useState(false);
+  const [isLiked, setIsLiked] = useState(card.likes?.includes(user?._id));
+  const isOwner = user?._id === card.user_id;
 
   const defaultImage = "https://placehold.co/400x200?text=Business+Card";
 
@@ -23,15 +32,31 @@ const BusinessCard = ({ card, onRefresh }) => {
     e.stopPropagation();
     if (!isLoggedIn) return;
     
+    if (inFavoritesView) {
+      setShowUnlikeModal(true);
+      onFavoriteChange && onFavoriteChange();
+      return;
+    }
+
     try {
       setIsLoading(true);
       await toggleFavorite(card._id);
-      setSnack('success', card.isFavorite ? 'Removed from favorites' : 'Added to favorites');
-      if (onRefresh) onRefresh();
+      setIsLiked(!isLiked);
+      setSnack('success', !isLiked ? 'Added to favorites' : 'Removed from favorites');
     } catch (error) {
       setSnack('danger', 'Failed to update favorite status');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUnlike = async () => {
+    try {
+      await toggleFavorite(card._id);
+      onFavoriteChange && onFavoriteChange();
+      setShowUnlikeModal(false);
+    } catch (error) {
+      setSnack('danger', 'Failed to remove from favorites');
     }
   };
 
@@ -41,17 +66,14 @@ const BusinessCard = ({ card, onRefresh }) => {
     return [street, houseNumber, city, country].filter(Boolean).join(', ');
   };
 
-  const handleActionClick = e => {
-    const action = e.currentTarget.dataset.action;
-    e.stopPropagation();
-    if (action === 'edit') setShowEditModal(true);
-    if (action === 'delete') setShowDeleteModal(true);
-  };
-
   return (
     <>
       <div className="col-md-4 mb-4">
-        <div className={`card h-100 shadow ${theme.cardBg}`}>
+        <div 
+          className={`card h-100 shadow ${theme.cardBg}`}
+          onClick={() => navigate(`/card/${card._id}`)}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="position-relative">
             <img 
               src={card.image?.url || defaultImage}
@@ -61,43 +83,46 @@ const BusinessCard = ({ card, onRefresh }) => {
               onError={e => { e.target.src = defaultImage; }}
             />
             
-            <div className="position-absolute top-0 end-0 m-2 d-flex gap-2">
-              {card.isOwner && (
-                <>
-                  <button 
-                    data-action="edit"
-                    onClick={handleActionClick}
-                    className="btn btn-light btn-sm rounded-circle"
-                    title="Edit Card"
-                  >
-                    <i className="bi bi-pencil-fill text-primary"></i>
-                  </button>
-                  <button 
-                    data-action="delete"
-                    onClick={handleActionClick}
-                    className="btn btn-light btn-sm rounded-circle"
-                    title="Delete Card"
-                  >
-                    <i className="bi bi-trash-fill text-danger"></i>
-                  </button>
-                </>
-              )}
-              
-              {isLoggedIn && (
+            {isLoggedIn && (
+              <div className="position-absolute top-0 end-0 m-2 d-flex gap-2">
+                {isOwner && (
+                  <>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEditModal(true);
+                      }}
+                      className="btn btn-light btn-sm rounded-circle"
+                      title="Edit Card"
+                    >
+                      <i className="bi bi-pencil-fill text-primary"></i>
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteModal(true, card._id);
+                      }}
+                      className="btn btn-light btn-sm rounded-circle"
+                      title="Delete Card"
+                    >
+                      <i className="bi bi-trash-fill text-danger"></i>
+                    </button>
+                  </>
+                )}
                 <button 
                   className="btn btn-light btn-sm rounded-circle"
                   onClick={handleFavoriteClick}
                   disabled={isLoading}
-                  title={card.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                  title={isLiked ? "Remove from Favorites" : "Add to Favorites"}
                 >
-                  {isLoggedIn ? (
+                  {isLoading ? (
                     <span className="spinner-border spinner-border-sm" />
                   ) : (
-                    <i className={`bi ${card.isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart'}`} />
+                    <i className={`bi ${isLiked ? 'bi-heart-fill text-danger' : 'bi-heart'}`} />
                   )}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="card-body">
@@ -115,13 +140,21 @@ const BusinessCard = ({ card, onRefresh }) => {
 
             <div className={`mt-3 ${theme.textColor}`}>
               {card.phone && (
-                <a href={`tel:${card.phone}`} className="d-block mb-2 text-decoration-none">
+                <a 
+                  href={`tel:${card.phone}`} 
+                  className="d-block mb-2 text-decoration-none"
+                  onClick={e => e.stopPropagation()}
+                >
                   <i className="bi bi-telephone-fill text-success me-2"></i>
                   {card.phone}
                 </a>
               )}
               {card.email && (
-                <a href={`mailto:${card.email}`} className="d-block mb-2 text-decoration-none">
+                <a 
+                  href={`mailto:${card.email}`} 
+                  className="d-block mb-2 text-decoration-none"
+                  onClick={e => e.stopPropagation()}
+                >
                   <i className="bi bi-envelope-fill text-primary me-2"></i>
                   {card.email}
                 </a>
@@ -150,7 +183,16 @@ const BusinessCard = ({ card, onRefresh }) => {
         <DeleteCard
           show={showDeleteModal}
           handleClose={() => setShowDeleteModal(false)}
-          handleDeleteCard={onRefresh}
+          cardId={card._id}
+          onDelete={onRefresh}
+        />
+      )}
+
+      {showUnlikeModal && (
+        <UnlikeCard
+          show={showUnlikeModal}
+          handleClose={() => setShowUnlikeModal(false)}
+          handleUnlikeCard={handleUnlike}
         />
       )}
     </>

@@ -1,9 +1,24 @@
 import { useTheme } from "../../providers/ThemeProvider";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
-const Logout = ({ show, handleClose, handleLogout }) => {
+const Logout = ({ show, handleClose }) => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
+  const { handleLogout } = useAuth();
 
   if (!show) return null;
+
+  const handleLogoutAndNavigate = async () => {
+    try {
+      await handleLogout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      handleClose();
+    }
+  };
 
   return (
     <>
@@ -39,7 +54,7 @@ const Logout = ({ show, handleClose, handleLogout }) => {
               </button>
               <button
                 className="btn btn-danger"
-                onClick={handleLogout}
+                onClick={handleLogoutAndNavigate}
               >
                 Log Out
               </button>

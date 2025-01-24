@@ -1,35 +1,27 @@
-// SnackbarProvider.jsx
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const SnackbarContext = createContext();
 
 export default function SnackbarProvider({ children }) {
-  const [isSnackOpen, setOpenSnack] = useState(false);
-  const [snackColor, setSnackColor] = useState('success');
-  const [snackMessage, setSnackMessage] = useState('');
-  const [queue, setQueue] = useState([]);
+  const [snack, setSnackState] = useState({
+    open: false,
+    color: 'success',
+    message: ''
+  });
 
   const setSnack = useCallback((color, message) => {
-    if (isSnackOpen) {
-      setQueue(prev => [...prev, { color, message }]);
-      return;
+    setSnackState({ open: true, color, message });
+  }, []);
+
+  useEffect(() => {
+    let timer;
+    if (snack.open) {
+      timer = setTimeout(() => {
+        setSnackState(prev => ({ ...prev, open: false }));
+      }, 3000);
     }
-
-    setSnackColor(color);
-    setSnackMessage(message);
-    setOpenSnack(true);
-
-    setTimeout(() => {
-      setOpenSnack(false);
-      setTimeout(() => {
-        if (queue.length > 0) {
-          const nextSnack = queue[0];
-          setQueue(prev => prev.slice(1));
-          setSnack(nextSnack.color, nextSnack.message);
-        }
-      }, 300);
-    }, 3000);
-  }, [isSnackOpen, queue]);
+    return () => clearTimeout(timer);
+  }, [snack.open]);
 
   return (
     <>
@@ -38,23 +30,21 @@ export default function SnackbarProvider({ children }) {
       </SnackbarContext.Provider>
 
       <div 
-        className={`position-fixed top-0 end-0 p-3 ${isSnackOpen ? 'show' : ''}`}
+        className="position-fixed top-0 end-0 p-3"
         style={{ 
-          zIndex: 1100,
+          transform: snack.open ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s ease-in-out',
-          transform: isSnackOpen ? 'translateX(0)' : 'translateX(100%)'
+          zIndex: 1100
         }}
       >
-        <div 
-          className={`alert alert-${snackColor} d-flex align-items-center shadow-lg mb-0`}
-          role="alert"
-        >
-          {snackColor === 'success' && <i className="bi bi-check-circle-fill me-2"></i>}
-          {snackColor === 'danger' && <i className="bi bi-x-circle-fill me-2"></i>}
-          {snackColor === 'warning' && <i className="bi bi-exclamation-triangle-fill me-2"></i>}
-          {snackColor === 'info' && <i className="bi bi-info-circle-fill me-2"></i>}
-          
-          <div>{snackMessage}</div>
+        <div className={`alert alert-${snack.color} d-flex align-items-center shadow-lg mb-0`}>
+          <i className={`bi me-2 ${
+            snack.color === 'success' ? 'bi-check-circle-fill' :
+            snack.color === 'danger' ? 'bi-x-circle-fill' :
+            snack.color === 'warning' ? 'bi-exclamation-triangle-fill' :
+            'bi-info-circle-fill'
+          }`}></i>
+          <div>{snack.message}</div>
         </div>
       </div>
     </>

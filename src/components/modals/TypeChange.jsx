@@ -1,4 +1,6 @@
+import React, { useState } from 'react';
 import { useTheme } from '../../providers/ThemeProvider';
+import { Spinner } from 'react-bootstrap';
 
 const TypeChange = ({ 
   show, 
@@ -10,8 +12,18 @@ const TypeChange = ({
   errorMessage 
 }) => {
   const { theme } = useTheme();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!show) return null;
+
+  const onConfirm = async () => {
+    try {
+      setIsSubmitting(true);
+      await handleConfirm();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -19,6 +31,11 @@ const TypeChange = ({
         className="modal show"
         style={{ display: 'block' }}
         tabIndex="-1"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleClose();
+          }
+        }}
       >
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${theme.bgColor}`}>
@@ -30,24 +47,27 @@ const TypeChange = ({
                 type="button" 
                 className={`btn-close ${theme.isDark ? 'btn-close-white' : ''}`}
                 onClick={handleClose}
-                aria-label="Close">
-              </button>
+                disabled={isSubmitting}
+                aria-label="Close"
+              />
             </div>
 
             <div className="modal-body">
               <p className={theme.textColor}>
                 Changing the user type will change your permissions. Are you sure?
               </p>
-              <div className="input-group mb-3">
-                <span className={`input-group-text ${theme.bgColor} ${theme.borderColor}`}>
+              <div className="form-group mb-3">
+                <label htmlFor="password" className={`form-label ${theme.textColor}`}>
                   Confirm Password:
-                </span>
+                </label>
                 <input
                   type="password"
+                  id="password"
                   className={`form-control ${theme.inputBg} ${theme.borderColor}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
+                  disabled={isSubmitting}
                 />
               </div>
               {errorMessage && (
@@ -61,15 +81,30 @@ const TypeChange = ({
               <button 
                 className={`btn ${theme.btnOutline}`}
                 onClick={handleClose}
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 className="btn btn-primary"
-                onClick={handleConfirm}
-                disabled={!password}
+                onClick={onConfirm}
+                disabled={!password || isSubmitting}
               >
-                Confirm Change
+                {isSubmitting ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Changing...
+                  </>
+                ) : (
+                  'Confirm Change'
+                )}
               </button>
             </div>
           </div>
