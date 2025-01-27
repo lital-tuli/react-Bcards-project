@@ -1,52 +1,104 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../providers/ThemeProvider';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import SearchBar from '../common/SearchBar';
 import Login from '../modals/Login';
 import Logout from '../modals/Logout';
 
-const Navbar = () => {
+const Navbar = ({ userType }) => {
   const { theme, isDark, toggleDarkMode } = useTheme();
-  const { isLoggedIn, handleLogout } = useAuth();
+  const { handleLogout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const navigate = useNavigate();
 
   const AuthButtons = () => {
-    if (isLoggedIn) {
+    if (userType === 'guest') {
       return (
-        <li className="nav-item">
-          <button 
-            onClick={() => setShowLogout(true)} 
-            className={`nav-link btn btn-link ${theme.textColor}`}
-          >
-            <i className="bi bi-box-arrow-right me-1"></i>
-            Logout
-          </button>
-        </li>
+        <>
+          <li className="nav-item">
+            <button
+              onClick={() => setShowLogin(true)}
+              className={`nav-link btn btn-link ${theme.textColor}`}
+            >
+              <i className="bi bi-box-arrow-in-right me-1"></i>
+              Login
+            </button>
+          </li>
+          <li className="nav-item">
+            <Link to="/register" className={`nav-link ${theme.textColor}`}>
+              <i className="bi bi-person-plus me-1"></i>
+              Register
+            </Link>
+          </li>
+        </>
       );
     }
 
     return (
-      <>
-        <li className="nav-item">
-          <button
-            onClick={() => setShowLogin(true)}
-            className={`nav-link btn btn-link ${theme.textColor}`}
-          >
-            <i className="bi bi-box-arrow-in-right me-1"></i>
-            Login
-          </button>
-        </li>
-        <li className="nav-item">
-          <Link to="/register" className={`nav-link ${theme.textColor}`}>
-            <i className="bi bi-person-plus me-1"></i>
-            Register
-          </Link>
-        </li>
-      </>
+      <li className="nav-item">
+        <button 
+          onClick={() => setShowLogout(true)} 
+          className={`nav-link btn btn-link ${theme.textColor}`}
+        >
+          <i className="bi bi-box-arrow-right me-1"></i>
+          Logout
+        </button>
+      </li>
     );
+  };
+
+  const UserLinks = () => {
+    switch (userType) {
+      case 'guest':
+        return null;
+      
+      case 'user':
+        return (
+          <>
+            <li className="nav-item">
+              <Link to="/profile" className={`nav-link ${theme.textColor}`}>
+                <i className="bi bi-person-circle me-1"></i>
+                My Profile
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link to="/favorites" className={`nav-link ${theme.textColor}`}>
+                <i className="bi bi-heart me-1"></i>
+                Favorites
+              </Link>
+            </li>
+          </>
+        );
+      
+      case 'business':
+      case 'admin':
+        return (
+          <>
+            <li className="nav-item">
+              <Link to="/profile" className={`nav-link ${theme.textColor}`}>
+                <i className="bi bi-person-circle me-1"></i>
+                My Profile
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link to="/my-cards" className={`nav-link ${theme.textColor}`}>
+                <i className="bi bi-collection me-1"></i>
+                My Cards
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link to="/favorites" className={`nav-link ${theme.textColor}`}>
+                <i className="bi bi-heart me-1"></i>
+                Favorites
+              </Link>
+            </li>
+          </>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -109,33 +161,10 @@ const Navbar = () => {
               <SearchBar />
             </div>
 
-            {/* Right side - Authentication and User Menu */}
+            {/* Right side - User Links and Authentication */}
             <ul className="navbar-nav ms-auto">
-              {isLoggedIn ? (
-                <>
-                  <li className="nav-item">
-                    <Link to="/profile" className={`nav-link ${theme.textColor}`}>
-                      <i className="bi bi-person-circle me-1"></i>
-                      My Profile
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link to="/my-cards" className={`nav-link ${theme.textColor}`}>
-                      <i className="bi bi-collection me-1"></i>
-                      My Cards
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link to="/favorites" className={`nav-link ${theme.textColor}`}>
-                      <i className="bi bi-heart me-1"></i>
-                      Favorites
-                    </Link>
-                  </li>
-                  <AuthButtons />
-                </>
-              ) : (
-                <AuthButtons />
-              )}
+              <UserLinks />
+              <AuthButtons />
             </ul>
           </div>
         </div>

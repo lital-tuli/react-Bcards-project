@@ -42,42 +42,47 @@ export const logoutUser = async () => {
 };
 
 // Register User
+
 export const registerUser = async (userData) => {
   try {
     const formattedData = {
       name: {
-        first: userData.firstName || userData.name?.first,
-        middle: userData.middleName || userData.name?.middle,
-        last: userData.lastName || userData.name?.last
+        first: userData.name.first,
+        middle: userData.name.middle || "",
+        last: userData.name.last
       },
       phone: userData.phone,
       email: userData.email,
       password: userData.password,
       image: {
-        url: userData.imageUrl || userData.image?.url || "https://i.ibb.co/B4rd7yx/default-Avatar.png",
-        alt: userData.imageAlt || userData.image?.alt || "Avatar"
+        url: userData.image.url || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+        alt: userData.image.alt || "User Profile Image"
       },
       address: {
-        state: userData.state || userData.address?.state || "",
-        country: userData.country || userData.address?.country,
-        city: userData.city || userData.address?.city,
-        street: userData.street || userData.address?.street,
-        houseNumber: parseInt(userData.houseNumber || userData.address?.houseNumber),
-        zip: parseInt(userData.zip || userData.address?.zip)
+        state: userData.address.state || "",
+        country: userData.address.country,
+        city: userData.address.city,
+        street: userData.address.street,
+        houseNumber: Number(userData.address.houseNumber),
+        zip: Number(userData.address.zip)
       },
-      isBusiness: userData.isBusiness || false
+      isBusiness: Boolean(userData.isBusiness)
     };
 
-    const response = await axios.post(USERS_URL, formattedData);
+    const response = await axios.post(`${BASE_URL}/users`, formattedData);
     return response.data;
   } catch (error) {
-    console.error("Registration Error:", error);
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Registration failed');
-    } else if (error.request) {
-      throw new Error('No response from server');
+    // Log the full error for debugging
+    console.error('Registration Error Details:', {
+      response: error.response?.data,
+      status: error.response?.status,
+      error: error
+    });
+
+    if (error.response?.data) {
+      throw new Error(error.response.data);
     }
-    throw new Error('Error setting up request');
+    throw new Error('Registration failed. Please try again.');
   }
 };
 

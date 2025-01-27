@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../providers/ThemeProvider';
-import { useSnack } from '../../providers/SnackbarProvider';
+import { useSnack } from '../../providers/SnackBarProvider';
 import { deleteCard } from '../../services/CardService';
 
 const DeleteCard = ({ show, handleClose, cardId, onDelete }) => {

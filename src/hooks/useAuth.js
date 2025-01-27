@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/UserService";
 import { jwtDecode } from "jwt-decode";
-import { useSnack } from "../providers/SnackbarProvider";
+import { useSnack } from "../providers/SnackBarProvider";
 
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);

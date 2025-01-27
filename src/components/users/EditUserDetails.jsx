@@ -5,7 +5,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { Spinner } from "react-bootstrap";
 import { useTheme } from "../../providers/ThemeProvider";
-import { useSnack } from "../../providers/SnackbarProvider";
+import { useSnack } from "../../providers/SnackBarProvider";
 
 const nameValidation = Yup.object({
   first: Yup.string()

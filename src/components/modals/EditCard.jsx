@@ -3,7 +3,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { updateCard } from '../../services/CardService';
-import { useSnack } from '../../providers/SnackbarProvider';
+import { useSnack } from '../../providers/SnackBarProvider';
 import FormField from '../common/FormField';
 
 const EditCard = ({ show, handleClose, card, onRefresh }) => {

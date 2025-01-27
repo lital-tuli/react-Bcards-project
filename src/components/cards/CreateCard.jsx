@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTheme } from '../../providers/ThemeProvider';
 import { createCard } from "../../services/CardService";
-
 import {
   titleValidation,
   subtitleValidation,
@@ -16,13 +15,20 @@ import {
   addressValidation
 } from "../../services/schemaService";
 import FormField from "../common/FormField";
-import { useSnack } from "../../providers/SnackbarProvider";
+import { useSnack } from "../../providers/SnackBarProvider";
 
-const CreateCard = ({ onCardCreated }) => {
+const CreateCard = ({ onCardCreated, onBack }) => {
   const { theme } = useTheme();
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const setSnack = useSnack();
+
+  const handleBack = (e) => {
+    e.preventDefault();
+    if (onBack) {
+      onBack();
+    }
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -62,7 +68,6 @@ const CreateCard = ({ onCardCreated }) => {
         if (onCardCreated) {
           onCardCreated(newCard);
         }
-        navigate(`/my-cards`);
       } catch (error) {
         if (error.response?.status === 401) {
           setErrorMessage("Authentication required. Please log in.");
@@ -71,7 +76,11 @@ const CreateCard = ({ onCardCreated }) => {
             navigate('/login');
           }, 2000);
         } else {
-          setErrorMessage(error.response?.data || error.message || "Failed to create card");
+          setErrorMessage(
+            error.response?.data || 
+            error.message || 
+            "Failed to create card"
+          );
           setSnack('danger', 'Failed to create card');
         }
       }
@@ -156,7 +165,7 @@ const CreateCard = ({ onCardCreated }) => {
           <button
             type="button"
             className={`btn ${theme.btnOutline}`}
-            onClick={() => navigate("/my-cards")}
+            onClick={handleBack}
           >
             <i className="bi bi-arrow-left me-2"></i>
             Back
@@ -181,6 +190,6 @@ const CreateCard = ({ onCardCreated }) => {
       </form>
     </div>
   );
-}
+};
 
 export default CreateCard;

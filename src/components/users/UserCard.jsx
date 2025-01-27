@@ -6,7 +6,7 @@ import TypeChange from '../modals/TypeChange';
 import Logout from '../modals/Logout';
 import DeleteAccount from '../modals/DeleteAccount';
 import { deleteUser, logoutUser, updateUserToken, updateUserType } from '../../services/UserService';
-import { useSnack } from '../../providers/SnackbarProvider';
+import { useSnack } from '../../providers/SnackBarProvider';
 import { useNavigate } from 'react-router-dom';
 
 const UserCard = ({ userData }) => {

@@ -3,7 +3,7 @@ import { getMyCards } from '../../services/CardService';
 import BusinessCard from '../cards/BusinessCard';
 import { useTheme } from '../../providers/ThemeProvider';
 import CreateCard from '../cards/CreateCard';
-import { useSnack } from '../../providers/SnackbarProvider';
+import { useSnack } from '../../providers/SnackBarProvider';
 import EditCard from '../modals/EditCard';
 
 const MyCards = () => {
@@ -36,11 +36,15 @@ const MyCards = () => {
     setEditingCard(card);
   };
 
-  const handleCardCreated = () => {
-    setShowCreateForm(false);
-    fetchMyCards();
+  // Handler for when a card is created
+  const handleCardCreated = async (newCard) => {
+    setShowCreateForm(false);  
+    await fetchMyCards();      
   };
 
+  const handleBackFromCreate = () => {
+    setShowCreateForm(false);  
+  };
   if (loading) {
     return (
       <div className="d-flex justify-content-center my-5">
@@ -48,6 +52,14 @@ const MyCards = () => {
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
+    );
+  }
+  if (showCreateForm) {
+    return (
+      <CreateCard 
+        onCardCreated={handleCardCreated}
+        onBack={handleBackFromCreate}  
+      />
     );
   }
 

@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import CreateCard from '../cards/CreateCard';
 import { useTheme } from '../../providers/ThemeProvider';
-import { useSnack } from '../../providers/SnackbarProvider';
+import { useSnack } from '../../providers/SnackBarProvider';
 
 const Home = () => {
   const [cards, setCards] = useState([]);
@@ -45,10 +45,14 @@ const Home = () => {
     }
   };
 
-  const handleCardCreated = () => {
+  const handleCardCreated = (newCard) => {
     setShowCreateForm(false);
     setSnack('success', 'Card created successfully');
     fetchCards();
+  };
+
+  const handleBack = () => {
+    setShowCreateForm(false);
   };
 
   const filteredCards = cards.filter(card => 
@@ -97,16 +101,10 @@ const Home = () => {
   if (showCreateForm) {
     return (
       <div className="container">
-        <CreateCard onCardCreated={handleCardCreated} />
-        <div className="text-center mt-3">
-          <button 
-            className={`btn ${theme.btnOutline}`}
-            onClick={() => setShowCreateForm(false)}
-          >
-            <i className="bi bi-arrow-left me-2"></i>
-            Back to Cards
-          </button>
-        </div>
+        <CreateCard 
+          onCardCreated={handleCardCreated} 
+          onBack={handleBack}
+        />
       </div>
     );
   }
