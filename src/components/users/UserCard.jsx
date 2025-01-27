@@ -206,7 +206,11 @@ const UserCard = ({ userData }) => {
                 </p>
                 <button 
                   className={`btn ${theme.btnOutline} w-100`}
-                  onClick={handleTypeChange}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleTypeChange(e);
+                  }}
                 >
                   Change to {userData.isBusiness ? "Customer" : "Business"} Account
                 </button>

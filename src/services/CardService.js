@@ -25,20 +25,12 @@ export const getCardById = async (cardId) => {
 export const getMyCards = async () => {
   try {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    // console.log('Auth Token:', token ? 'Present' : 'Missing');
 
-    console.log('Sending request to /cards/my-cards');
     const response = await axiosInstance.get('/cards/my-cards');
     
-    // console.log('Response:', response.data);
     return response.data;
   } catch (error) {
-    // console.error('Error details:', {
-    //   message: error.message,
-    //   response: error.response?.data,
-    //   status: error.response?.status,
-    //   headers: error.response?.headers
-    // });
+    
     throw new Error(error.response?.data?.message || 'Failed to fetch your cards');
   }
 };

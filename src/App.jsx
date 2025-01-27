@@ -24,43 +24,64 @@ import SnackbarProvider from './providers/SnackBarProvider';
 import CardPage from './components/cards/CardPage';
 import NotFound from './components/pages/NotFound';
 
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
 function App() {
   const [userType, setUserType] = useState('guest');
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-    if (token) {
-      const decoded = jwtDecode(token);
-      if (decoded.isAdmin) {
-        setUserType('admin');
-      } else if (decoded.isBusiness) {
-        setUserType('business');
+    const checkAuthToken = () => {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          if (decoded.isAdmin) {
+            setUserType('admin');
+          } else if (decoded.isBusiness) {
+            setUserType('business');
+          } else {
+            setUserType('user');
+          }
+        } catch (error) {
+          console.error('Token decode error:', error);
+          setUserType('guest');
+        }
       } else {
-        setUserType('user');
+        setUserType('guest');
       }
-    } else {
-      setUserType('guest');
-    }
+    };
+
+    checkAuthToken();
+
+    window.addEventListener('storage', checkAuthToken);
+
+    window.addEventListener('authChange', checkAuthToken);
+
+    return () => {
+      window.removeEventListener('storage', checkAuthToken);
+      window.removeEventListener('authChange', checkAuthToken);
+    };
   }, []);
 
   return (
     <ThemeProvider>
       <SnackbarProvider>
         <Router>
-          <Header userType={userType} />
+          <Header />
           <Navbar userType={userType} />
           <main style={{ minHeight: '80vh' }}>
             <div className="container py-4">
               <Routes>
-                {/* Public Routes - Available to Everyone */}
-                <Route path="/" element={<Home userType={userType} />} />
-                <Route path="/card/:id" element={<CardPage />} />
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/card/:id" element={<CardPage />} />
+                
                 {/* Guest Only Routes */}
                 {userType === 'guest' && (
                   <>
                     <Route path="/register" element={<Register />} />
-                    <Route path="/login" element={<Login />} />
                   </>
                 )}
 
@@ -76,15 +97,6 @@ function App() {
                 {(userType === 'business' || userType === 'admin') && (
                   <>
                     <Route path="/my-cards" element={<MyCards />} />
-                    <Route path="/create-card" element={<CreateCard />} />
-                    <Route path="/edit-card/:id" element={<EditCard />} />
-                  </>
-                )}
-
-                {/* Admin Only Routes */}
-                {userType === 'admin' && (
-                  <>
-                    <Route path="/sandbox" element={<Sandbox />} />
                   </>
                 )}
 
@@ -93,7 +105,7 @@ function App() {
               </Routes>
             </div>
           </main>
-          <Footer userType={userType} />
+          <Footer />
         </Router>
       </SnackbarProvider>
     </ThemeProvider>

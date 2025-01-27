@@ -31,9 +31,9 @@ const Login = ({ show, onClose }) => {
         const success = await handleLogin(values);
         if (success) {
           if (onClose) onClose();
+          window.dispatchEvent(new Event('authChange'));
+          setSnack('success', 'Successfully logged in!');
           navigate('/');
-          window.location.reload();
-
             setSnack('success', 'Successfully logged in!');
 
 

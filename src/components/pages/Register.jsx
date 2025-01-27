@@ -96,6 +96,8 @@ const Register = () => {
 
         if (loginResponse) {
           setUser(loginResponse);
+          // Dispatch auth change event
+          window.dispatchEvent(new Event('authChange'));
           navigate('/');
         }
       } catch (error) {
